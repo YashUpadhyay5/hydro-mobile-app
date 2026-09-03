@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "Attendance Marked Successfully",
+  "leaveApproved": "Leave Approved",
+  "leaveRejected": "Leave Rejected",
+  "payrollGenerated": "Payroll Generated Successfully",
+  "expenseApproved": "Expense Approved",
+  "gpsSignalLost": "GPS Signal Lost",
+  "internetConnected": "Internet Connected",
+  "internetDisconnected": "Internet Disconnected",
+  "sessionExpired": "Session Expired",
+  "profileUpdated": "Profile Updated Successfully",
+  "passwordChanged": "Password Changed Successfully"
+}

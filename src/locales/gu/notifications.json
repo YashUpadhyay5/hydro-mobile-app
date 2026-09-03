@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "હાજરી સફળતાપૂર્વક પૂરાઈ ગઈ",
+  "leaveApproved": "રજા મંજૂર થઈ",
+  "leaveRejected": "રજા અસ્વીકાર થઈ",
+  "payrollGenerated": "પેરોલ જનરેટ થયો",
+  "expenseApproved": "ખર્ચ મંજૂર થયો",
+  "gpsSignalLost": "GPS સિગ્નલ ખોવાઈ ગયું",
+  "internetConnected": "ઈન્ટરનેટ કનેક્ટ થયું",
+  "internetDisconnected": "ઈન્ટરનેટ ડિસ્કનેક્ટ થયું",
+  "sessionExpired": "સેશન સમાપ્ત થઈ ગયું",
+  "profileUpdated": "પ્રોફાઇલ અપડેટ થઈ",
+  "passwordChanged": "પાસવર્ડ સફળતાપૂર્વક બદલાયો"
+}

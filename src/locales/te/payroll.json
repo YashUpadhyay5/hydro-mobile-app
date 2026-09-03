@@ -1,0 +1,16 @@
+{
+  "title": "పేరోల్",
+  "generatePayroll": "పేరోల్ రూపొందించండి",
+  "payslip": "జీతం స్లిప్",
+  "salary": "జీతం",
+  "basicSalary": "ప్రాథమిక జీతం",
+  "allowances": "అలవెన్సులు",
+  "deductions": "మినహాయింపులు",
+  "netSalary": "నికర జీతం",
+  "payrollGenerated": "పేరోల్ విజయవంతంగా రూపొందించబడింది",
+  "month": "నెల",
+  "year": "సంవత్సరం",
+  "downloadPayslip": "జీతం స్లిప్ డౌన్‌లోడ్ చేయండి",
+  "statusPaid": "చెల్లించబడింది",
+  "statusPending": "పెండింగ్‌లో ఉంది"
+}

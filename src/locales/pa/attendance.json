@@ -1,0 +1,21 @@
+{
+  "title": "ਹਾਜ਼ਰੀ",
+  "markAttendance": "ਹਾਜ਼ਰੀ ਲਗਾਓ",
+  "checkInSuccess": "ਸਫਲਤਾਪੂਰਵਕ ਚੈੱਕ ਇਨ ਕੀਤਾ ਗਿਆ",
+  "checkOutSuccess": "ਸਫਲਤਾਪੂਰਵਕ ਚੈੱਕ ਆਊਟ ਕੀਤਾ ਗਿਆ",
+  "locationPermissionRequired": "ਲੋਕੇਸ਼ਨ ਇਜਾਜ਼ਤ ਦੀ ਲੋੜ ਹੈ",
+  "gpsDisabled": "ਜੀਪੀਐਸ ਬੰਦ ਹੈ ਜਾਂ ਸਿਗਨਲ ਗੁੰਮ ਹੈ",
+  "gpsSignalLost": "ਜੀਪੀਐਸ ਸਿਗਨਲ ਗੁੰਮ ਹੋ ਗਿਆ",
+  "workingFrom": "ਕੰਮ ਕਰਨ ਦੀ ਜਗ੍ਹਾ",
+  "office": "ਦਫ਼ਤਰ",
+  "field": "ਫੀਲਡ",
+  "remote": "ਰਿਮੋਟ",
+  "warehouse": "ਗੋਦਾਮ",
+  "factory": "ਫੈਕਟਰੀ",
+  "workType": "ਕੰਮ ਦੀ ਕਿਸਮ",
+  "selectWorkType": "ਕੰਮ ਦੀ ਜਗ੍ਹਾ ਚੁਣੋ",
+  "history": "ਹਾਜ਼ਰੀ ਇਤਿਹਾਸ",
+  "today": "ਅੱਜ",
+  "thisWeek": "ਇਸ ਹਫ਼ਤੇ",
+  "thisMonth": "ਇਸ ਮਹੀਨੇ"
+}

@@ -1,0 +1,12 @@
+{
+  "wizard_title": "సెటప్ & ట్రాకింగ్ హెల్త్",
+  "wizard_subtitle": "నమ్మకమైన అటెండెన్స్ ట్రాకింగ్ నిర్ధారించుకోండి",
+  "battery_opt": "బ్యాటరీ ఆప్టిమైజేషన్ మినహాయింపు",
+  "autostart": "ఆటో-స్టార్ట్ అనుమతి",
+  "location_always": "లోకేషన్ (ఎల్లప్పుడూ అనుమతించు)",
+  "notifications_perm": "నోటిఫికేషన్లు",
+  "continue_anyway": "అయినా కొనసాగించండి",
+  "refresh_health": "మళ్లీ తనిఖీ చేయండి",
+  "languageSettings": "భాష సెట్టింగ్‌లు",
+  "resetToDefault": "రీసెట్ చేయండి"
+}

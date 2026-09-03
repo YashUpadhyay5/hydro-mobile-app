@@ -1,0 +1,13 @@
+{
+  "requiredField": "ਜ਼ਰੂਰੀ ਖੇਤਰ",
+  "invalidEmail": "ਗਲਤ ਈਮੇਲ ਪਤਾ",
+  "passwordTooShort": "ਪਾਸਵਰਡ ਘੱਟੋ-ਘੱਟ 6 ਅੱਖਰਾਂ ਦਾ ਹੋਣਾ ਚਾਹੀਦਾ ਹੈ",
+  "passwordMismatch": "ਪਾਸਵਰਡ ਮੇਲ ਨਹੀਂ ਖਾਂਦੇ",
+  "loginFailed": "ਲੌਗਇਨ ਅਸਫਲ ਰਿਹਾ",
+  "networkError": "ਨੈੱਟਵਰਕ ਗਲਤੀ",
+  "gpsDisabled": "ਜੀਪੀਐਸ ਅਯੋਗ ਹੈ",
+  "locationPermissionRequired": "ਲੋਕੇਸ਼ਨ ਇਜਾਜ਼ਤ ਦੀ ਲੋੜ ਹੈ",
+  "noInternet": "ਕੋਈ ਇੰਟਰਨੈਟ ਕਨੈਕਸ਼ਨ ਨਹੀਂ",
+  "serverError": "ਸਰਵਰ ਗਲਤੀ",
+  "somethingWentWrong": "ਕੁਝ ਗਲਤ ਹੋ ਗਿਆ"
+}

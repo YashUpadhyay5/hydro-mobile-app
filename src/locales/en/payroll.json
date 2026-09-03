@@ -1,0 +1,16 @@
+{
+  "title": "Payroll",
+  "generatePayroll": "Generate Payroll",
+  "payslip": "Payslip",
+  "salary": "Salary",
+  "basicSalary": "Basic Salary",
+  "allowances": "Allowances",
+  "deductions": "Deductions",
+  "netSalary": "Net Salary",
+  "payrollGenerated": "Payroll Generated Successfully",
+  "month": "Month",
+  "year": "Year",
+  "downloadPayslip": "Download Payslip",
+  "statusPaid": "Paid",
+  "statusPending": "Pending"
+}

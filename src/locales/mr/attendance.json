@@ -1,0 +1,21 @@
+{
+  "title": "उपस्थिती",
+  "markAttendance": "उपस्थिती नोंदवा",
+  "checkInSuccess": "यशस्वीरित्या चेक इन केले",
+  "checkOutSuccess": "यशस्वीरित्या चेक आउट केले",
+  "locationPermissionRequired": "स्थान परवानगी आवश्यक आहे",
+  "gpsDisabled": "जीपीएस बंद आहे",
+  "gpsSignalLost": "जीपीएस सिग्नल हरवला",
+  "workingFrom": "कामाचे ठिकाण",
+  "office": "कार्यालय",
+  "field": "फील्ड",
+  "remote": "रिमोट",
+  "warehouse": "गोदाम",
+  "factory": "कारखाना",
+  "workType": "कामाचा प्रकार",
+  "selectWorkType": "कामाचे ठिकाण निवडा",
+  "history": "उपस्थिती इतिहास",
+  "today": "आज",
+  "thisWeek": "या आठवड्यात",
+  "thisMonth": "या महिन्यात"
+}

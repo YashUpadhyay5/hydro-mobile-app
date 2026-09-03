@@ -1,0 +1,13 @@
+{
+  "live_title": "ਲਾਈਵ ਸਟਾਫ ਟ੍ਰੈਕਿੰਗ",
+  "route_replay_title": "ਰੂਟ ਰੀਪਲੇਅ",
+  "geofence_title": "ਜੀਓਫੈਂਸ ਪ੍ਰਬੰਧਨ",
+  "geofence_policy": "ਸਰਗਰਮ ਜੀਓਫੈਂਸ ਨੀਤੀ",
+  "geofence_desc": "ਦਫ਼ਤਰ ਦੀਆਂ ਸੀਮਾਵਾਂ ਦੇ ਆਧਾਰ 'ਤੇ ਆਟੋਮੈਟਿਕ ਟ੍ਰੈਕਿੰਗ।",
+  "current_location": "ਮੌਜੂਦਾ ਸਥਾਨ",
+  "gps_active": "ਜੀਪੀਐਸ ਸਰਗਰਮ",
+  "cell_active": "ਸੈੱਲ ਟਾਵਰ ਸਰਗਰਮ",
+  "offline_warning": "ਸਥਾਨ ਬੰਦ ਕੀਤਾ ਗਿਆ!",
+  "radius_label": "ਅਰਧ ਵਿਆਸ (ਮੀਟਰ)",
+  "add_geofence": "ਨਵਾਂ ਜੀਓਫੈਂਸ ਜੋੜੋ"
+}

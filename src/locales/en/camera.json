@@ -1,0 +1,11 @@
+{
+  "title": "Geotagged Camera",
+  "subtitle": "Capture attendance photo with live GPS",
+  "open_camera": "Open Camera",
+  "retake": "Retake Photo",
+  "upload_photo": "Upload Attendance Photo",
+  "location_stamping": "Stamping GPS coordinates...",
+  "gallery_title": "Geotagged Photo Gallery",
+  "empty_gallery": "No geotagged photos uploaded yet.",
+  "delete_photo_confirm": "Are you sure you want to delete this photo?"
+}

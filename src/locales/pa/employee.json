@@ -1,0 +1,19 @@
+{
+  "title": "ਕਰਮਚਾਰੀ ਡਾਇਰੈਕਟਰੀ",
+  "addEmployee": "ਕਰਮਚਾਰੀ ਜੋੜੋ",
+  "name": "ਪੂਰਾ ਨਾਮ",
+  "email": "ਈਮੇਲ ਪਤਾ",
+  "phone": "ਫ਼ੋਨ ਨੰਬਰ",
+  "address": "ਪਤਾ",
+  "employeeId": "ਕਰਮਚਾਰੀ ਆਈਡੀ",
+  "department": "ਵਿਭਾਗ",
+  "designation": "ਹੁਹਦਾ",
+  "joiningDate": "ਸ਼ਾਮਲ ਹੋਣ ਦੀ ਮਿਤੀ",
+  "password": "ਪਾਸਵਰਡ",
+  "confirmPassword": "ਪਾਸਵਰਡ ਦੀ ਪੁਸ਼ਟੀ ਕਰੋ",
+  "role": "ਭੂਮਿਕਾ",
+  "admin": "ਐਡਮਿਨ",
+  "employee": "ਕਰਮਚਾਰੀ",
+  "profileUpdated": "ਪ੍ਰੋਫਾਈਲ ਅੱਪਡੇਟ ਕੀਤਾ ਗਿਆ",
+  "workTypes": "ਕੰਮ ਦੀਆਂ ਕਿਸਮਾਂ"
+}

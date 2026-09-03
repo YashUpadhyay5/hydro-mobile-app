@@ -1,0 +1,19 @@
+{
+  "title": "কৰ্মচাৰী ডাইৰেক্টৰী",
+  "addEmployee": "কৰ্মচাৰী যোগ কৰক",
+  "name": "সম্পূৰ্ণ নাম",
+  "email": "ইমেইল ঠিকনা",
+  "phone": "ফোন নম্বৰ",
+  "address": "ঠিকনা",
+  "employeeId": "কৰ্মচাৰী আইডি",
+  "department": "বিভাগ",
+  "designation": "পদবী",
+  "joiningDate": "যোগদানৰ তাৰিখ",
+  "password": "পাছৱৰ্ড",
+  "confirmPassword": "পাছৱৰ্ড নিশ্চিত কৰক",
+  "role": "ভূমিকা",
+  "admin": "এডমিন",
+  "employee": "কৰ্মচাৰী",
+  "profileUpdated": "প্রফাইল সফলভাৱে আপডেট কৰা হ’ল",
+  "workTypes": "কামৰ প্ৰকাৰসমূহ"
+}

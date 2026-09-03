@@ -1,0 +1,21 @@
+{
+  "title": "উপস্থিতি",
+  "markAttendance": "উপস্থিতি দিয়ক",
+  "checkInSuccess": "সফলভাৱে চেক ইন কৰা হ’ল",
+  "checkOutSuccess": "সফলভাৱে চেক আউট কৰা হ’ল",
+  "locationPermissionRequired": "স্থানৰ অনুমতি প্ৰয়োজন",
+  "gpsDisabled": "জিপিএছ সংকেত বিচ্ছিন্ন হৈছে",
+  "gpsSignalLost": "জিপিএছ সংকেত হেৰাইছে",
+  "workingFrom": "কামৰ স্থান",
+  "office": "কাৰ্যালয়",
+  "field": "ফিল্ড",
+  "remote": "ৰিম'ট",
+  "warehouse": "গুদাম",
+  "factory": "ফেক্টৰী",
+  "workType": "কামৰ প্ৰকাৰ",
+  "selectWorkType": "কামৰ স্থান বাছনি কৰক",
+  "history": "উপস্থিতিৰ ইতিহাস",
+  "today": "আজিকালি/আজি",
+  "thisWeek": "এই সপ্তাহত",
+  "thisMonth": "এই মাহত"
+}

@@ -1,0 +1,19 @@
+{
+  "title": "ఉద్యోగుల డైరెక్టరీ",
+  "addEmployee": "ఉద్యోగిని జోడించండి",
+  "name": "పూర్తి పేరు",
+  "email": "ఈమెయిల్ చిరునామా",
+  "phone": "ఫోన్ నంబర్",
+  "address": "చిరునామా",
+  "employeeId": "ఉద్యోగి ఐడి",
+  "department": "శాఖ",
+  "designation": "హోదా",
+  "joiningDate": "చేరిన తేదీ",
+  "password": "పాస్‌వర్డ్",
+  "confirmPassword": "పాస్‌వర్డ్ నిర్ధారించండి",
+  "role": "పాత్ర",
+  "admin": "అడ్మిన్",
+  "employee": "ఉద్యోగి",
+  "profileUpdated": "ప్రొఫైల్ విజయవంతంగా నవీకరించబడింది",
+  "workTypes": "పని రకాలు"
+}

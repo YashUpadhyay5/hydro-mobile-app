@@ -1,0 +1,16 @@
+{
+  "title": "পেরোল",
+  "generatePayroll": "পেরোল তৈরি করুন",
+  "payslip": "পে-স্লিপ",
+  "salary": "বেতন",
+  "basicSalary": "মূল বেতন",
+  "allowances": "ভাতা",
+  "deductions": "কর্তন",
+  "netSalary": "মোট নিট বেতন",
+  "payrollGenerated": "পেরোল সফলভাবে তৈরি করা হয়েছে",
+  "month": "মাস",
+  "year": "বছর",
+  "downloadPayslip": "পে-স্লিপ ডাউনলোড করুন",
+  "statusPaid": "পরিশোধিত",
+  "statusPending": "মুলতুবি"
+}

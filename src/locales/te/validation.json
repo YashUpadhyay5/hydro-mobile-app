@@ -1,0 +1,13 @@
+{
+  "requiredField": "తప్పనిసరి ఫీల్డ్",
+  "invalidEmail": "చెల్లని ఈమెయిల్ చిరునామా",
+  "passwordTooShort": "పాస్‌వర్డ్ కనీసం 6 అక్షరాలు ఉండాలి",
+  "passwordMismatch": "పాస్‌వర్డ్‌లు సరిపోలలేదు",
+  "loginFailed": "లాగిన్ విఫలమైంది",
+  "networkError": "నెట్‌వర్క్ లోపం",
+  "gpsDisabled": "జీపీఎస్ నిలిపివేయబడింది",
+  "locationPermissionRequired": "లొకేషన్ అనుమతి అవసరం",
+  "noInternet": "ఇంటర్నెట్ కనెక్షన్ లేదు",
+  "serverError": "సర్వర్ లోపం",
+  "somethingWentWrong": "ఏదో తప్పు జరిగింది"
+}

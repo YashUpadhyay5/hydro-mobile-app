@@ -1,0 +1,21 @@
+{
+  "title": "ଉପସ୍ଥିତି",
+  "markAttendance": "ଉପସ୍ଥିତି ଦିଅନ୍ତୁ",
+  "checkInSuccess": "ସଫଳତାର ସହ ଚେକ୍ ଇନ୍ ହେଲା",
+  "checkOutSuccess": "ସଫଳତାର ସହ ଚେକ୍ ଆଉଟ୍ ହେଲା",
+  "locationPermissionRequired": "ସ୍ଥାନ ଅନୁମତି ଆବଶ୍ୟକ",
+  "gpsDisabled": "GPS ସଙ୍କେତ ହଜିଯାଇଛି",
+  "gpsSignalLost": "GPS ସଙ୍କେତ ହଜିଯାଇଛି",
+  "workingFrom": "କାର୍ଯ୍ୟ ସ୍ଥାନ",
+  "office": "କାର୍ଯ୍ୟାଳୟ",
+  "field": "ଫିଲ୍ଡ",
+  "remote": "ରିମୋଟ୍",
+  "warehouse": "ଗୋଦାମ",
+  "factory": "ଫ୍ୟାକ୍ଟ୍ରି",
+  "workType": "କାର୍ଯ୍ୟ ପ୍ରକାର",
+  "selectWorkType": "କାର୍ଯ୍ୟ ସ୍ଥାନ ବାଛନ୍ତୁ",
+  "history": "ଉପସ୍ଥିତି ଇତିହାସ",
+  "today": "ଆଜି",
+  "thisWeek": "ଏହି ସପ୍ତାହ",
+  "thisMonth": "ଏହି ମାସ"
+}

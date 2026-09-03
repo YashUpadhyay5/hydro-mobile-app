@@ -1,0 +1,21 @@
+{
+  "title": "હાજરી",
+  "markAttendance": "હાજરી પૂરો",
+  "checkInSuccess": "સફળતાપૂર્વક ચેક ઇન કર્યું",
+  "checkOutSuccess": "સફળતાપૂર્વક ચેક આઉટ કર્યું",
+  "locationPermissionRequired": "સ્થળ પરવાનગી જરૂરી છે",
+  "gpsDisabled": "GPS સિગ્નલ ખોવાઈ ગયું અથવા બંધ છે",
+  "gpsSignalLost": "GPS સિગ્નલ ખોવાઈ ગયું",
+  "workingFrom": "કામનું સ્થળ",
+  "office": "ઓફિસ",
+  "field": "ફિલ્ડ",
+  "remote": "રિમોટ",
+  "warehouse": "ગોડાઉન",
+  "factory": "ફેક્ટરી",
+  "workType": "કામનો પ્રકાર",
+  "selectWorkType": "કામનું સ્થળ પસંદ કરો",
+  "history": "હાજરી ઇતિહાસ",
+  "today": "આજે",
+  "thisWeek": "આ અઠવાડિયે",
+  "thisMonth": "આ મહિને"
+}

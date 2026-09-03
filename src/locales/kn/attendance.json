@@ -1,0 +1,21 @@
+{
+  "title": "ಹಾಜರಾತಿ",
+  "markAttendance": "ಹಾಜರಾತಿ ಗುರುತಿಸಿ",
+  "checkInSuccess": "ಯಶಸ್ವಿಯಾಗಿ ಚೆಕ್ ಇನ್ ಆಗಿದೆ",
+  "checkOutSuccess": "ಯಶಸ್ವಿಯಾಗಿ ಚೆಕ್ ಔಟ್ ಆಗಿದೆ",
+  "locationPermissionRequired": "ಸ್ಥಳದ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ",
+  "gpsDisabled": "ಜಿಪಿಎಸ್ ಸಿಗ್ನಲ್ ಕಳೆದುಹೋಗಿದೆ",
+  "gpsSignalLost": "ಜಿಪಿಎಸ್ ಸಿಗ್ನಲ್ ಕಳೆದುಹೋಗಿದೆ",
+  "workingFrom": "ಕೆಲಸ ಮಾಡುವ ಸ್ಥಳ",
+  "office": "ಕಚೇರಿ",
+  "field": "ಫೀಲ್ಡ್",
+  "remote": "ರಿಮೋಟ್",
+  "warehouse": "ಗೋದಾಮು",
+  "factory": "ಫ್ಯಾಕ್ಟರಿ",
+  "workType": "ಕೆಲಸದ ಪ್ರಕಾರ",
+  "selectWorkType": "ಕೆಲಸದ ಸ್ಥಳ ಆಯ್ಕೆಮಾಡಿ",
+  "history": "ಹಾಜರಾತಿ ಇತಿಹಾಸ",
+  "today": "ಇಂದು",
+  "thisWeek": "ಈ ವಾರ",
+  "thisMonth": "ಈ ತಿಂಗಳು"
+}

@@ -1,0 +1,13 @@
+{
+  "requiredField": "ಅಗತ್ಯವಿರುವ ಕ್ಷೇತ್ರ",
+  "invalidEmail": "ಅಮಾನ್ಯ ಇಮೇಲ್ ವಿಳಾಸ",
+  "passwordTooShort": "ಪಾಸ್‌ವರ್ಡ್ ಕನಿಷ್ಠ 6 ಅಕ್ಷರಗಳನ್ನು ಹೊಂದಿರಬೇಕು",
+  "passwordMismatch": "ಪಾಸ್‌ವರ್ಡ್‌ಗಳು ತಾಳೆಯಾಗುತ್ತಿಲ್ಲ",
+  "loginFailed": "ಲಾಗಿನ್ ವಿಫಲವಾಗಿದೆ",
+  "networkError": "ನೆಟ್‌ವರ್ಕ್ ದೋಷ",
+  "gpsDisabled": "ಜಿಪಿಎಸ್ ನಿಷ್ಕ್ರಿಯಗೊಳಿಸಲಾಗಿದೆ",
+  "locationPermissionRequired": "ಸ್ಥಳದ ಅನುಮತಿ ಅಗತ್ಯವಿದೆ",
+  "noInternet": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವಿಲ್ಲ",
+  "serverError": "ಸರ್ವರ್ ದೋಷ",
+  "somethingWentWrong": "ಏನೋ ತಪ್ಪಾಗಿದೆ"
+}

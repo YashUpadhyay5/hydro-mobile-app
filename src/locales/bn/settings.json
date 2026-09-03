@@ -1,0 +1,12 @@
+{
+  "wizard_title": "সেটআপ ও ট্র্যাকিং অবস্থা",
+  "wizard_subtitle": "নির্ভরযোগ্য উপস্থিতি ট্র্যাকিং নিশ্চিত করুন",
+  "battery_opt": "ব্যাটারি অপ্টিমাইজেশন ছাড়",
+  "autostart": "অটো-স্টার্ট অনুমতি",
+  "location_always": "অবস্থান (সবসময় অনুমতি দিন)",
+  "notifications_perm": "বিজ্ঞপ্তি",
+  "continue_anyway": "তবুও চালিয়ে যান",
+  "refresh_health": "পুনরায় পরীক্ষা করুন",
+  "languageSettings": "ভাষা সেটিংস",
+  "resetToDefault": "পুনরায় সেটিং করুন"
+}

@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "ഹാജർ വിജയകരമായി രേഖപ്പെടുത്തി",
+  "leaveApproved": "അവധി അനുവദിച്ചു",
+  "leaveRejected": "അവധി നിരസിച്ചു",
+  "payrollGenerated": "പേറോൾ തയ്യാറാക്കി",
+  "expenseApproved": "ചെലവ് അംഗീകരിച്ചു",
+  "gpsSignalLost": "ജിപിഎസ് സിഗ്നൽ നഷ്ടപ്പെട്ടു",
+  "internetConnected": "ഇന്റർനെറ്റ് കണക്റ്റായി",
+  "internetDisconnected": "ഇന്റർനെറ്റ് വിച്ഛേദിക്കപ്പെട്ടു",
+  "sessionExpired": "സെഷൻ കാലാവധി കഴിഞ്ഞു",
+  "profileUpdated": "പ്രൊഫൈൽ പുതുക്കി",
+  "passwordChanged": "പാസ്‌വേഡ് മാറ്റി"
+}

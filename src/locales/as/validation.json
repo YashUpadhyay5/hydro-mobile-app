@@ -1,0 +1,13 @@
+{
+  "requiredField": "প্ৰয়োজনীয় ক্ষেত্ৰ",
+  "invalidEmail": "অসিদ্ধ ইমেইল ঠিকনা",
+  "passwordTooShort": "পাছৱৰ্ড নূন্যতম ৬টা আখৰৰ হ’ব লাগিব",
+  "passwordMismatch": "পাছৱৰ্ড মিল খোৱা নাই",
+  "loginFailed": "লগইন ব্যৰ্থ হৈছে",
+  "networkError": "নেটৱৰ্কৰ ত্ৰুটি",
+  "gpsDisabled": "জিপিএছ অক্ষম কৰা হৈছে",
+  "locationPermissionRequired": "স্থানৰ অনুমতি প্ৰয়োজন",
+  "noInternet": "ইণ্টাৰনেট সংযোগ নাই",
+  "serverError": "ছাৰ্ভাৰৰ ত্ৰুটি",
+  "somethingWentWrong": "কিবা ভুল হ’ল"
+}

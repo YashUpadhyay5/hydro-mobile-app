@@ -1,0 +1,17 @@
+{
+  "title": "Dashboard",
+  "appName": "HRMS Enterprise",
+  "welcomeUser": "Welcome, {{name}} 👋",
+  "logout": "Logout",
+  "currentWorkMode": "🏢 Current Work Mode: {{mode}}",
+  "todaysWorkMode": "Today's Work Mode",
+  "chooseWorkModeDesc": "Choose Field if working off-site today",
+  "office": "Office",
+  "field": "Field",
+  "clockedIn": "✓ Clocked In",
+  "clockIn": "Clock In",
+  "clockOut": "Clock Out",
+  "trackingSetupHealth": "Tracking & Setup Health",
+  "runDiagnostics": "Run Diagnostics",
+  "welcome": "Welcome back,"
+}

@@ -1,0 +1,16 @@
+{
+  "title": "ಪೇರೋಲ್",
+  "generatePayroll": "ಪೇರೋಲ್ ರಚಿಸಿ",
+  "payslip": "ಸಂಬಳದ ಚೀಟಿ",
+  "salary": "ಸಂಬಳ",
+  "basicSalary": "ಮೂಲ ವೇತನ",
+  "allowances": "ಭತ್ಯೆಗಳು",
+  "deductions": "ಕಡಿತಗಳು",
+  "netSalary": "ನಿವ್ವಳ ವೇತನ",
+  "payrollGenerated": "ಪೇರೋಲ್ ಯಶಸ್ವಿಯಾಗಿ ರಚಿಸಲಾಗಿದೆ",
+  "month": "ತಿಂಗಳು",
+  "year": "ವರ್ಷ",
+  "downloadPayslip": "ಸಂಬಳದ ಚೀಟಿ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ",
+  "statusPaid": "ಪಾವತಿಸಲಾಗಿದೆ",
+  "statusPending": "ಬಾಕಿ ಇದೆ"
+}

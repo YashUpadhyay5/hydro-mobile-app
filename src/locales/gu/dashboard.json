@@ -1,0 +1,17 @@
+{
+  "title": "ડેશબોર્ડ",
+  "appName": "એચઆરએમએસ એન્ટરપ્રાઇઝ",
+  "welcomeUser": "સ્વાગત છે, {{name}} 👋",
+  "logout": "લૉગઆઉટ",
+  "currentWorkMode": "🏢 વર્તમાન કાર્ય સ્થિતિ: {{mode}}",
+  "todaysWorkMode": "આજની કાર્ય સ્થિતિ",
+  "chooseWorkModeDesc": "જો આજે બહાર કામ કરતા હોવ તો ફીલ્ડ પસંદ કરો",
+  "office": "ઓફિસ",
+  "field": "ફીલ્ડ",
+  "clockedIn": "✓ કલૉક ઇન થયું",
+  "clockIn": "ક્લૉક ઇન",
+  "clockOut": "ક્લૉક આઉટ",
+  "trackingSetupHealth": "ટ્રેકિંગ અને સેટઅપ સ્વાસ્થ્ય",
+  "runDiagnostics": "ડાયગ્નોસ્ટિક્સ ચલાવો",
+  "welcome": "પાછા સ્વાગત છે,"
+}

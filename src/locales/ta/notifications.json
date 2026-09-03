@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "வருகை பதிவு செய்யப்பட்டது",
+  "leaveApproved": "விடுப்பு ஒப்புக்கொள்ளப்பட்டது",
+  "leaveRejected": "விடுப்பு நிராகரிக்கப்பட்டது",
+  "payrollGenerated": "சம்பளம் உருவாக்கப்பட்டது",
+  "expenseApproved": "செலவு ஒப்புக்கொள்ளப்பட்டது",
+  "gpsSignalLost": "ஜிபிஎஸ் சிக்னல் இழக்கப்பட்டது",
+  "internetConnected": "இணையம் இணைக்கப்பட்டது",
+  "internetDisconnected": "இணைய இணைப்பு துண்டிக்கப்பட்டது",
+  "sessionExpired": "அமர்வு முடிவடைந்தது",
+  "profileUpdated": "சுயவிவரம் புதுப்பிக்கப்பட்டது",
+  "passwordChanged": "கடவுச்சொல் மாற்றப்பட்டது"
+}

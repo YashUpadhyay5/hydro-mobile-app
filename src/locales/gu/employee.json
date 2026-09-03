@@ -1,0 +1,19 @@
+{
+  "title": "કર્મચારી ડાયરેક્ટરી",
+  "addEmployee": "કર્મચારી ઉમેરો",
+  "name": "પૂરું નામ",
+  "email": "ઈમેઇલ સરનામું",
+  "phone": "ફોન નંબર",
+  "address": "સરનામું",
+  "employeeId": "કર્મચારી ID",
+  "department": "વિભાગ",
+  "designation": "હોદ્દો",
+  "joiningDate": "જોડાવાની તારીખ",
+  "password": "પાસવર્ડ",
+  "confirmPassword": "પાસવર્ડની પુષ્ટિ કરો",
+  "role": "ભૂમિકા",
+  "admin": "એડમિન",
+  "employee": "કર્મચારી",
+  "profileUpdated": "પ્રોફાઇલ અદ્યતન થઈ ગઈ",
+  "workTypes": "કામના પ્રકારો"
+}

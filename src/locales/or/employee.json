@@ -1,0 +1,19 @@
+{
+  "title": "କର୍ମଚାରୀ ଡିରେକ୍ଟୋରୀ",
+  "addEmployee": "କର୍ମଚାରୀ ଯୋଡନ୍ତୁ",
+  "name": "ପୂରା ନାମ",
+  "email": "ଇମେଲ୍ ଠିକଣା",
+  "phone": "ଫୋନ୍ ନମ୍ବର",
+  "address": "ଠିକଣା",
+  "employeeId": "କର୍ମଚାରୀ ଆଇଡି",
+  "department": "ବିଭାଗ",
+  "designation": "ପଦବୀ",
+  "joiningDate": "ଯୋଗଦାନ ତାରିଖ",
+  "password": "ପାସୱାର୍ଡ",
+  "confirmPassword": "ପାସୱାର୍ଡ ନିଶ୍ଚିତ କରନ୍ତୁ",
+  "role": "ଭୂମିକା",
+  "admin": "ଆଡମିନ୍",
+  "employee": "କର୍ମଚାରୀ",
+  "profileUpdated": "ପ୍ରୋଫାଇଲ୍ ଅପଡେଟ୍ ହେଲା",
+  "workTypes": "କାର୍ଯ୍ୟ ପ୍ରକାର"
+}

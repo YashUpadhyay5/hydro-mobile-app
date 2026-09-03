@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "ଉପସ୍ଥିତି ଦିଆଗଲା",
+  "leaveApproved": "ଛୁଟି ଅନୁମୋଦିତ ହେଲା",
+  "leaveRejected": "ଛୁଟି ଅଗ୍ରାହ୍ୟ ହେଲା",
+  "payrollGenerated": "ପେରୋଲ୍ ପ୍ରସ୍ତୁତ ହେଲା",
+  "expenseApproved": "ଖର୍ଚ୍ଚ ଅନୁମୋଦିତ ହେଲା",
+  "gpsSignalLost": "GPS ସଙ୍କେତ ହଜିଯାଇଛି",
+  "internetConnected": "ଇଣ୍ଟରନେଟ୍ ସଂଯୋଗ ହେଲା",
+  "internetDisconnected": "ଇଣ୍ଟରନେଟ୍ ବିଚ୍ଛିନ୍ନ ହେଲା",
+  "sessionExpired": "ସେସନ୍ ଶେଷ ହେଲା",
+  "profileUpdated": "ପ୍ରୋଫାଇଲ୍ ଅପଡେଟ୍ ହେଲା",
+  "passwordChanged": "ପାସୱାର୍ଡ ବଦଳାଗଲା"
+}

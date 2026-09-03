@@ -1,0 +1,16 @@
+{
+  "title": "ਪੇਰੋਲ",
+  "generatePayroll": "ਪੇਰੋਲ ਬਣਾਓ",
+  "payslip": "ਤਨਖਾਹ ਪਰਚੀ",
+  "salary": "ਤਨਖਾਹ",
+  "basicSalary": "ਮੂਲ ਤਨਖਾਹ",
+  "allowances": "ਭੱਤੇ",
+  "deductions": "ਕਟੌਤੀਆਂ",
+  "netSalary": "ਕੁੱਲ ਮਿਲਣਯੋਗ ਤਨਖਾਹ",
+  "payrollGenerated": "ਪੇਰੋਲ ਸਫਲਤਾਪੂਰਵਕ ਤਿਆਰ ਕੀਤਾ ਗਿਆ",
+  "month": "ਮਹੀਨਾ",
+  "year": "ਸਾਲ",
+  "downloadPayslip": "ਤਨਖਾਹ ਪਰਚੀ ਡਾਊਨਲੋਡ ਕਰੋ",
+  "statusPaid": "ਭੁਗਤਾਨ ਕੀਤਾ",
+  "statusPending": "ਬਕਾਇਆ"
+}

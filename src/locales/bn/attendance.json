@@ -1,0 +1,21 @@
+{
+  "title": "উপস্থিতি",
+  "markAttendance": "উপস্থিতি দিন",
+  "checkInSuccess": "সফলভাবে চেক ইন করা হয়েছে",
+  "checkOutSuccess": "সফলভাবে চেক আউট করা হয়েছে",
+  "locationPermissionRequired": "অবস্থানের অনুমতি প্রয়োজন",
+  "gpsDisabled": "জিপিএস সংকেত বিচ্ছিন্ন বা বন্ধ",
+  "gpsSignalLost": "জিপিএস সংকেত বিচ্ছিন্ন",
+  "workingFrom": "কাজের স্থান",
+  "office": "অফিস",
+  "field": "ফিল্ড",
+  "remote": "রিমোট",
+  "warehouse": "গুদাম",
+  "factory": "কারখানা",
+  "workType": "কাজের ধরন",
+  "selectWorkType": "কাজের স্থান নির্বাচন করুন",
+  "history": "উপস্থিতির ইতিহাস",
+  "today": "আজ",
+  "thisWeek": "এই সপ্তাহে",
+  "thisMonth": "এই মাসে"
+}

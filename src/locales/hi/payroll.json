@@ -1,0 +1,16 @@
+{
+  "title": "पेरोल",
+  "generatePayroll": "पेरोल जनरेट करें",
+  "payslip": "वेतन पर्ची",
+  "salary": "वेतन",
+  "basicSalary": "मूल वेतन",
+  "allowances": "भत्ते",
+  "deductions": "कौतुक/कटौती",
+  "netSalary": "शुद्ध वेतन",
+  "payrollGenerated": "पेरोल सफलतापूर्वक जनरेट हुआ",
+  "month": "महीना",
+  "year": "वर्ष",
+  "downloadPayslip": "वेतन पर्ची डाउनलोड करें",
+  "statusPaid": "भुगतान किया गया",
+  "statusPending": "लंबित"
+}

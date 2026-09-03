@@ -1,0 +1,16 @@
+{
+  "title": "சம்பளம் (பேரோல்)",
+  "generatePayroll": "சம்பளம் உருவாக்கு",
+  "payslip": "சம்பள சீட்டு",
+  "salary": "சம்பளம்",
+  "basicSalary": "அடிப்படை சம்பளம்",
+  "allowances": "படிப்பாடி",
+  "deductions": "பிடித்தங்கள்",
+  "netSalary": "நிகர சம்பளம்",
+  "payrollGenerated": "சம்பள பட்டியல் உருவாக்கப்பட்டது",
+  "month": "மாதம்",
+  "year": "ஆண்டு",
+  "downloadPayslip": "சம்பள சீட்டை பதிவிறக்கு",
+  "statusPaid": "செலுத்தப்பட்டது",
+  "statusPending": "நிலுவையில்"
+}

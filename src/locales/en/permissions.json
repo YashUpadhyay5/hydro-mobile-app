@@ -1,0 +1,7 @@
+{
+  "camera_perm_title": "Camera Permission Required",
+  "camera_perm_desc": "App requires camera access for geotagged photos.",
+  "location_perm_title": "Location Permission Required",
+  "location_perm_desc": "App requires location access for geofence verification.",
+  "grant_permission": "Grant Permission"
+}

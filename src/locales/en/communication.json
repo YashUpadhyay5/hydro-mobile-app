@@ -1,0 +1,16 @@
+{
+  "hub_title": "Enterprise Communication",
+  "camera_card_title": "Geotagged Camera",
+  "camera_card_desc": "Instant camera with GPS timestamping",
+  "chat_card_title": "Employee Chat",
+  "chat_card_desc": "Direct 1-on-1 team messaging",
+  "meetings_card_title": "Team Video Meetings",
+  "meetings_card_desc": "Schedule & join virtual calls",
+  "search_staff": "Search employees...",
+  "online": "Online",
+  "offline": "Offline",
+  "type_message": "Type a message...",
+  "delete_for_me": "Delete for Me",
+  "delete_for_everyone": "Delete for Everyone",
+  "reply": "Reply"
+}

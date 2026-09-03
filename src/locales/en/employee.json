@@ -1,0 +1,19 @@
+{
+  "title": "Employee Directory",
+  "addEmployee": "Add Employee",
+  "name": "Full Name",
+  "email": "Email Address",
+  "phone": "Phone Number",
+  "address": "Address",
+  "employeeId": "Employee ID",
+  "department": "Department",
+  "designation": "Designation",
+  "joiningDate": "Joining Date",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "role": "Role",
+  "admin": "Admin",
+  "employee": "Employee",
+  "profileUpdated": "Profile Updated Successfully",
+  "workTypes": "Work Types"
+}

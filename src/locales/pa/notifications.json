@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "ਹਾਜ਼ਰੀ ਸਫਲਤਾਪੂਰਵਕ ਲਗਾਈ ਗਈ",
+  "leaveApproved": "ਛੁੱਟੀ ਮਨਜ਼ੂਰ ਹੋਈ",
+  "leaveRejected": "ਛੁੱਟੀ ਰੱਦ ਹੋਈ",
+  "payrollGenerated": "ਪੇਰੋਲ ਤਿਆਰ ਕੀਤਾ ਗਿਆ",
+  "expenseApproved": "ਖਰਚਾ ਮਨਜ਼ੂਰ ਹੋਇਆ",
+  "gpsSignalLost": "ਜੀਪੀਐਸ ਸਿਗਨਲ ਗੁੰਮ ਹੋ ਗਿਆ",
+  "internetConnected": "ਇੰਟਰਨੈਟ ਕਨੈਕਟ ਹੋ ਗਿਆ",
+  "internetDisconnected": "ਇੰਟਰਨੈਟ ਡਿਸਕਨੈਕਟ ਹੋ ਗਿਆ",
+  "sessionExpired": "ਸੈਸ਼ਨ ਸਮਾਪਤ ਹੋ ਗਿਆ",
+  "profileUpdated": "ਪ੍ਰੋਫਾਈਲ ਅੱਪਡੇਟ ਹੋ ਗਿਆ",
+  "passwordChanged": "ਪਾਸਵਰਡ ਬਦਲਿਆ ਗਿਆ"
+}

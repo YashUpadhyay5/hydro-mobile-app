@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "హాజరు విజయవంతంగా నమోదైంది",
+  "leaveApproved": "సెలవు ఆమోదించబడింది",
+  "leaveRejected": "సెలవు తిరస్కరించబడింది",
+  "payrollGenerated": "పేరోల్ రూపొందించబడింది",
+  "expenseApproved": "ఖర్చు ఆమోదించబడింది",
+  "gpsSignalLost": "జీపీఎస్ సిగ్నల్ పోయింది",
+  "internetConnected": "ఇంటర్నెట్ కనెక్ట్ అయింది",
+  "internetDisconnected": "ఇంటర్నెట్ డిస్‌కనెక్ట్ అయింది",
+  "sessionExpired": "సెషన్ ముగిసింది",
+  "profileUpdated": "ప్రొఫైల్ నవీకరించబడింది",
+  "passwordChanged": "పాస్‌వర్డ్ విజయవంతంగా మార్చబడింది"
+}

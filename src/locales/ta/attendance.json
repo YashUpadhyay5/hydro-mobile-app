@@ -1,0 +1,21 @@
+{
+  "title": "வருகை பதிவேடு",
+  "markAttendance": "வருகை பதிவு செய்",
+  "checkInSuccess": "வெற்றிகரமாக செக் இன் செய்யப்பட்டது",
+  "checkOutSuccess": "வெற்றிகரமாக செக் அவுட் செய்யப்பட்டது",
+  "locationPermissionRequired": "இருப்பிட அனுமதி தேவை",
+  "gpsDisabled": "ஜிபிஎஸ் சிக்னல் இழக்கப்பட்டது",
+  "gpsSignalLost": "ஜிபிஎஸ் சிக்னல் இழக்கப்பட்டது",
+  "workingFrom": "வேலை செய்யும் இடம்",
+  "office": "அலுவலகம்",
+  "field": "களம்",
+  "remote": "தொலைநிலை",
+  "warehouse": "கிடங்கு",
+  "factory": "தொழிற்சாலை",
+  "workType": "வேலை வகை",
+  "selectWorkType": "வேலை இடத்தை தேர்ந்தெடுக்கவும்",
+  "history": "வருகை வரலாறு",
+  "today": "இன்று",
+  "thisWeek": "இந்த வாரம்",
+  "thisMonth": "இந்த மாதம்"
+}

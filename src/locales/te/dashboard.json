@@ -1,0 +1,17 @@
+{
+  "title": "డాష్‌బోర్డ్",
+  "appName": "హెచ్.ఆర్.ఎమ్.ఎస్ ఎంటర్‌ప్రైజ్",
+  "welcomeUser": "స్వాగతం, {{name}} 👋",
+  "logout": "లాగ్ అవుట్",
+  "currentWorkMode": "🏢 ప్రస్తుత పని మోడ్: {{mode}}",
+  "todaysWorkMode": "ఈరోజు పని మోడ్",
+  "chooseWorkModeDesc": "ఈరోజు బయట పనిచేస్తుంటే ఫీల్డ్ ఎంచుకోండి",
+  "office": "ఆఫీస్",
+  "field": "ఫీల్డ్",
+  "clockedIn": "✓ క్లాక్ ఇన్ అయింది",
+  "clockIn": "క్లాక్ ఇన్",
+  "clockOut": "క్లాక్ అవుట్",
+  "trackingSetupHealth": "ట్రాకింగ్ & సెటప్ హెల్త్",
+  "runDiagnostics": "డయాగ్నోస్టిక్స్ రన్ చేయండి",
+  "welcome": "తిరిగి స్వాగతం,"
+}

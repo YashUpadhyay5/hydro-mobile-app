@@ -1,0 +1,13 @@
+{
+  "live_title": "Live Staff Tracking",
+  "route_replay_title": "Route Replay",
+  "geofence_title": "Geofence Management",
+  "geofence_policy": "Active Geofence Policy",
+  "geofence_desc": "Automatic tracking based on office site boundaries.",
+  "current_location": "Current Location",
+  "gps_active": "GPS Active",
+  "cell_active": "Cellular Tower Active",
+  "offline_warning": "Location turned off manually!",
+  "radius_label": "Radius (meters)",
+  "add_geofence": "Add New Geofence Site"
+}

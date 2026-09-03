@@ -1,0 +1,17 @@
+{
+  "title": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+  "appName": "ಹೆಚ್.ಆರ್.ಎಮ್.ಎಸ್ ಎಂಟರ್‌ಪ್ರೈಸ್",
+  "welcomeUser": "ಸ್ವಾಗತ, {{name}} 👋",
+  "logout": "ಲಾಗ್‌ಔಟ್",
+  "currentWorkMode": "🏢 ಪ್ರಸ್ತುತ ಕೆಲಸದ ಮೋಡ್: {{mode}}",
+  "todaysWorkMode": "ಇಂದಿನ ಕೆಲಸದ ಮೋಡ್",
+  "chooseWorkModeDesc": "ಇಂದು ಹೊರಗೆ ಕೆಲಸ ಮಾಡುತ್ತಿದ್ದರೆ ಫೀಲ್ಡ್ ಆಯ್ಕೆಮಾಡಿ",
+  "office": "ಕಚೇರಿ",
+  "field": "ಫೀಲ್ಡ್",
+  "clockedIn": "✓ ಕ್ಲಾಕ್ ಇನ್ ಆಗಿದೆ",
+  "clockIn": "ಕ್ಲಾಕ್ ಇನ್",
+  "clockOut": "ಕ್ಲಾಕ್ ಔಟ್",
+  "trackingSetupHealth": "ಟ್ರ್ಯಾಕಿಂಗ್ & ಸೆಟಪ್ ಸ್ಥಿತಿ",
+  "runDiagnostics": "ಪರೀಕ್ಷೆ ನಡೆಸಿ",
+  "welcome": "ಮತ್ತೆ ಸ್ವಾಗತ,"
+}

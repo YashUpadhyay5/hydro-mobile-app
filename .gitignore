@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+
+# Android generated files
+android/app/build/
+android/build/
+android/.gradle/
+android/app/.cxx/
+android/.cxx/
+
+# Module generated Android files
+modules/**/android/build/
+modules/**/android/.gradle/
+modules/**/android/.cxx/
+
+# iOS generated files
+ios/build/
+ios/Pods/
+ios-build/
+
+# Build outputs
+dist/
+*.ipa
+*.apk
+*.aab
+
+# Logs
+*.log
+logcat_*.txt
+
+# Temporary files
+temp_*.txt
+
+# Debug / device dumps
+*.xml
+screen.png
+test_sample.pdf
+
+# IDE
+.idea/
+.vscode/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db

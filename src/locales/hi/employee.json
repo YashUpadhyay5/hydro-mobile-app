@@ -1,0 +1,19 @@
+{
+  "title": "कर्मचारी निर्देशिका",
+  "addEmployee": "कर्मचारी जोड़ें",
+  "name": "पूरा नाम",
+  "email": "ईमेल पता",
+  "phone": "फ़ोन नंबर",
+  "address": "पता",
+  "employeeId": "कर्मचारी आईडी",
+  "department": "विभाग",
+  "designation": "पद",
+  "joiningDate": "शामिल होने की तिथि",
+  "password": "पासवर्ड",
+  "confirmPassword": "पासवर्ड की पुष्टि करें",
+  "role": "भूमिका",
+  "admin": "एडमिन",
+  "employee": "कर्मचारी",
+  "profileUpdated": "प्रोफ़ाइल सफलतापूर्वक अद्यतन की गई",
+  "workTypes": "कार्य प्रकार"
+}

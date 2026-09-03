@@ -1,0 +1,17 @@
+{
+  "title": "ডেচবৰ্ড",
+  "appName": "এইচআৰএমএছ এণ্টাৰপ্ৰাইজ",
+  "welcomeUser": "স্বাগতম, {{name}} 👋",
+  "logout": "লগআউট",
+  "currentWorkMode": "🏢 বৰ্তমানৰ কাৰ্য্য মোড: {{mode}}",
+  "todaysWorkMode": "আজিৰ কাৰ্য্য মোড",
+  "chooseWorkModeDesc": "আজি বাহিৰত কাম কৰিলে ফিল্ড বাছনি কৰক",
+  "office": "কাৰ্যালয়",
+  "field": "ফিল্ড",
+  "clockedIn": "✓ ক্লক ইন কৰা হ’ল",
+  "clockIn": "ক্লক ইন",
+  "clockOut": "ক্লক আউট",
+  "trackingSetupHealth": "ট্ৰ্যাকিং আৰু ছেটআপ স্থিতি",
+  "runDiagnostics": "ডায়াগনষ্টিক চলাওক",
+  "welcome": "পুনৰাই স্বাগতম,"
+}

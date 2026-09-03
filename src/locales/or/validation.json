@@ -1,0 +1,13 @@
+{
+  "requiredField": "ଆବଶ୍ୟକ କ୍ଷେତ୍ର",
+  "invalidEmail": "ଅସିଦ୍ଧ ଇମେଲ ଠିକଣା",
+  "passwordTooShort": "ପାସୱାର୍ଡ କମରେ ୬ଟି ଅକ୍ଷର ହେବା ଉଚିତ",
+  "passwordMismatch": "ପାସୱାର୍ଡ ମେଳ ଖାଉନାହିଁ",
+  "loginFailed": "ଲଗଇନ୍ ବିଫଳ ହେଲା",
+  "networkError": "ନେଟୱାର୍କ ତ୍ରୁଟି",
+  "gpsDisabled": "GPS ନିଷ୍କ୍ରିୟ ଅଛି",
+  "locationPermissionRequired": "ସ୍ଥାନ ଅନୁମତି ଆବଶ୍ୟକ",
+  "noInternet": "ଇଣ୍ଟରନେଟ୍ ସଂଯୋଗ ନାହିଁ",
+  "serverError": "ସର୍ଭର ତ୍ରୁଟି",
+  "somethingWentWrong": "କିଛି ଭୁଲ୍ ହେଲା"
+}

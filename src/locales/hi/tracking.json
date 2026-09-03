@@ -1,0 +1,13 @@
+{
+  "live_title": "लाइव कर्मचारी ट्रैकिंग",
+  "route_replay_title": "मार्ग रीप्ले",
+  "geofence_title": "जियोफेंस प्रबंधन",
+  "geofence_policy": "सक्रिय जियोफेंस नीति",
+  "geofence_desc": "कार्यालय की सीमाओं के आधार पर स्वचालित ट्रैकिंग।",
+  "current_location": "वर्तमान स्थान",
+  "gps_active": "जीपीएस सक्रिय",
+  "cell_active": "सेलुलर टावर सक्रिय",
+  "offline_warning": "स्थान मैन्युअल रूप से बंद किया गया!",
+  "radius_label": "त्रिज्या (मीटर)",
+  "add_geofence": "नया जियोफेंस जोड़ें"
+}

@@ -1,0 +1,17 @@
+{
+  "title": "ଡ୍ୟାସବୋର୍ଡ",
+  "appName": "ଏଚଆରଏମଏସ ଏଣ୍ଟରପ୍ରାଇଜ୍",
+  "welcomeUser": "ସ୍ୱାଗତ, {{name}} 👋",
+  "logout": "ଲଗଆଉଟ୍",
+  "currentWorkMode": "🏢 ବର୍ତ୍ତମାନର କାର୍ଯ୍ୟ ମୋଡ୍: {{mode}}",
+  "todaysWorkMode": "ଆଜିର କାର୍ଯ୍ୟ ମୋଡ୍",
+  "chooseWorkModeDesc": "ଆଜି ବାହାରେ କାମ କରୁଥିଲେ ଫିଲ୍ଡ ବାଛନ୍ତୁ",
+  "office": "କାର୍ଯ୍ୟାଳୟ",
+  "field": "ଫିଲ୍ଡ",
+  "clockedIn": "✓ କ୍ଲକ୍ ଇନ୍ ହୋଇଛି",
+  "clockIn": "କ୍ଲକ୍ ଇନ୍",
+  "clockOut": "କ୍ଲକ୍ ଆଉଟ୍",
+  "trackingSetupHealth": "ଟ୍ରାକିଂ ଏବଂ ସେଟଅପ୍ ସ୍ଥିତି",
+  "runDiagnostics": "ଡାଇଗ୍ନୋଷ୍ଟିକ୍ସ ଚଲାନ୍ତୁ",
+  "welcome": "ଫେରିବାରେ ସ୍ୱାଗତ,"
+}

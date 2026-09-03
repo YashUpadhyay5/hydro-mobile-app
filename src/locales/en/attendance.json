@@ -1,0 +1,21 @@
+{
+  "title": "Attendance",
+  "markAttendance": "Mark Attendance",
+  "checkInSuccess": "Checked In Successfully",
+  "checkOutSuccess": "Checked Out Successfully",
+  "locationPermissionRequired": "Location Permission Required",
+  "gpsDisabled": "GPS Signal Lost or Disabled",
+  "gpsSignalLost": "GPS Signal Lost",
+  "workingFrom": "Working From",
+  "office": "Office",
+  "field": "Field",
+  "remote": "Remote",
+  "warehouse": "Warehouse",
+  "factory": "Factory",
+  "workType": "Work Type",
+  "selectWorkType": "Select Work Location",
+  "history": "Attendance History",
+  "today": "Today",
+  "thisWeek": "This Week",
+  "thisMonth": "This Month"
+}

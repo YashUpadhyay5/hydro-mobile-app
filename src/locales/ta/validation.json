@@ -1,0 +1,13 @@
+{
+  "requiredField": "தேவையான புலம்",
+  "invalidEmail": "தவறான மின்னஞ்சல் முகவரி",
+  "passwordTooShort": "கடவுச்சொல் குறைந்தது 6 எழுத்துக்கள் இருக்க வேண்டும்",
+  "passwordMismatch": "கடவுச்சொற்கள் பொருந்தவில்லை",
+  "loginFailed": "உள்நுழைவு தோல்வியடைந்தது",
+  "networkError": "பிணைய பிழை",
+  "gpsDisabled": "ஜிபிஎஸ் முடக்கப்பட்டுள்ளது",
+  "locationPermissionRequired": "இருப்பிட அனுமதி தேவை",
+  "noInternet": "இணைய இணைப்பு இல்லை",
+  "serverError": "சேவையக பிழை",
+  "somethingWentWrong": "ஏதோ தவற நடந்துவிட்டது"
+}

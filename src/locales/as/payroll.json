@@ -1,0 +1,16 @@
+{
+  "title": "পে'ৰোল",
+  "generatePayroll": "পে'ৰোল প্ৰস্তুত কৰক",
+  "payslip": "দৰমহাৰ পে'স্লিপ",
+  "salary": "দৰমহা",
+  "basicSalary": "মূল দৰমহা",
+  "allowances": "ভাতা",
+  "deductions": "কর্তন",
+  "netSalary": "মুঠ দৰমহা",
+  "payrollGenerated": "পে'ৰোল সফলভাৱে প্ৰস্তুত কৰা হ’ল",
+  "month": "মাহ",
+  "year": "বছৰ",
+  "downloadPayslip": "পে'স্লিপ ডাউনলোড কৰক",
+  "statusPaid": "পরিশোধিত",
+  "statusPending": "বকেয়া"
+}

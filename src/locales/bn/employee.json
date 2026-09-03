@@ -1,0 +1,19 @@
+{
+  "title": "কর্মী ডিরেক্টরি",
+  "addEmployee": "কর্মী যোগ করুন",
+  "name": "সম্পূর্ণ নাম",
+  "email": "ইমেইল ঠিকানা",
+  "phone": "ফোন নম্বর",
+  "address": "ঠিকানা",
+  "employeeId": "কর্মী আইডি",
+  "department": "বিভাগ",
+  "designation": "পদবী",
+  "joiningDate": "যোগদানের তারিখ",
+  "password": "পাসওয়ার্ড",
+  "confirmPassword": "পাসওয়ার্ড নিশ্চিত করুন",
+  "role": "ভূমিকা",
+  "admin": "এডমিন",
+  "employee": "কর্মী",
+  "profileUpdated": "প্রোফাইল সফলভাবে আপডেট করা হয়েছে",
+  "workTypes": "কাজের ধরন"
+}

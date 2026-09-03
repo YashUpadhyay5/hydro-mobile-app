@@ -1,0 +1,13 @@
+{
+  "requiredField": "Required Field",
+  "invalidEmail": "Invalid Email Address",
+  "passwordTooShort": "Password Must Be At Least 6 Characters",
+  "passwordMismatch": "Passwords Do Not Match",
+  "loginFailed": "Login Failed",
+  "networkError": "Network Error",
+  "gpsDisabled": "GPS Disabled",
+  "locationPermissionRequired": "Location Permission Required",
+  "noInternet": "No Internet Connection",
+  "serverError": "Server Error",
+  "somethingWentWrong": "Something Went Wrong"
+}

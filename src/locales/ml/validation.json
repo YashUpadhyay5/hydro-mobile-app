@@ -1,0 +1,13 @@
+{
+  "requiredField": "ആവശ്യമായ ഫീൽഡ്",
+  "invalidEmail": "തെറ്റായ ഇമെയിൽ വിലാസം",
+  "passwordTooShort": "പാസ്‌വേഡിൽ കുറഞ്ഞത് 6 അക്ഷരങ്ങൾ ഉണ്ടായിരിക്കണം",
+  "passwordMismatch": "പാസ്‌വേഡുകൾ ചേരുന്നില്ല",
+  "loginFailed": "ലോഗിൻ പരാജയപ്പെട്ടു",
+  "networkError": "നെറ്റ്‌വർക്ക് പിശക്",
+  "gpsDisabled": "ജിപിഎസ് ഡിസേബിൾ ചെയ്തു",
+  "locationPermissionRequired": "ലൊക്കേഷൻ അനുമതി ആവശ്യമാണ്",
+  "noInternet": "ഇന്റർനെറ്റ് കണക്ഷൻ ഇല്ല",
+  "serverError": "സെർവർ പിശക്",
+  "somethingWentWrong": "എന്തോ തകരാറ് സംഭവിച്ചു"
+}

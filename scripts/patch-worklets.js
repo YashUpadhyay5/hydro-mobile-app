@@ -1,0 +1,1 @@
+const fs = require('fs'); const file = 'node_modules/react-native-worklets/android/CMakeLists.txt'; if (fs.existsSync(file)) { let content = fs.readFileSync(file, 'utf8'); content = content.replace(/CONFIGURE_DEPENDS/g, ''); fs.writeFileSync(file, content); console.log('Patched worklets'); }

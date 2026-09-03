@@ -1,0 +1,12 @@
+{
+  "wizard_title": "सेटअप आणि ट्रॅकिंग आरोग्य",
+  "wizard_subtitle": "विश्वसनीय उपस्थिती ट्रॅकिंगची खात्री करा",
+  "battery_opt": "बॅटरी ऑप्टिमायझेशन सवलत",
+  "autostart": "ऑटो-स्टार्ट परवानगी",
+  "location_always": "स्थान (नेहमी अनुमती द्या)",
+  "notifications_perm": "पुश सूचना",
+  "continue_anyway": "तसेच पुढे जा",
+  "refresh_health": "आरोग्य पुन्हा तपासा",
+  "languageSettings": "भाषा सेटिंग्ज",
+  "resetToDefault": "डिफॉल्टवर रीसेट करा"
+}

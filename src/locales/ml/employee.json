@@ -1,0 +1,19 @@
+{
+  "title": "ജീവനക്കാരുടെ ഡയറക്ടറി",
+  "addEmployee": "ജീവനക്കാരനെ ചേർക്കുക",
+  "name": "പൂർണ്ണ നാമം",
+  "email": "ഇമെയിൽ വിലാസം",
+  "phone": "ഫോൺ നമ്പർ",
+  "address": "വിലാസം",
+  "employeeId": "എംപ്ലോയി ഐഡി",
+  "department": "വകുപ്പ്",
+  "designation": "തസ്തിക",
+  "joiningDate": "ചേർന്ന തീയതി",
+  "password": "പാസ്‌വേഡ്",
+  "confirmPassword": "പാസ്‌വേഡ് ഉറപ്പാക്കുക",
+  "role": "റോൾ",
+  "admin": "അഡ്മിൻ",
+  "employee": "ജീവനക്കാരൻ",
+  "profileUpdated": "പ്രൊഫൈൽ അപ്‌ഡേറ്റ് ചെയ്തു",
+  "workTypes": "ജോലി തരങ്ങൾ"
+}

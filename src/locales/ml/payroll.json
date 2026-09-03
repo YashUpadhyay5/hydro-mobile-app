@@ -1,0 +1,16 @@
+{
+  "title": "പേറോൾ",
+  "generatePayroll": "പേറോൾ തയാറാക്കുക",
+  "payslip": "പേസ്ലിപ്പ്",
+  "salary": "ശമ്പളം",
+  "basicSalary": "അടിസ്ഥാന ശമ്പളം",
+  "allowances": "അലവൻസുകൾ",
+  "deductions": "പിടുത്തങ്ങൾ",
+  "netSalary": "അറ്റ ശമ്പളം",
+  "payrollGenerated": "പേറോൾ വിജയകരമായി തയാറാക്കി",
+  "month": "മാസം",
+  "year": "വർഷം",
+  "downloadPayslip": "പേസ്ലിപ്പ് ഡൗൺലോഡ് ചെയ്യുക",
+  "statusPaid": "നൽകി",
+  "statusPending": "തീർപ്പുകൽപ്പിക്കാത്തവ"
+}

@@ -1,0 +1,19 @@
+{
+  "title": "ஊழியர் கோப்பகம்",
+  "addEmployee": "ஊழியரை சேர்",
+  "name": "முழு பெயர்",
+  "email": "மின்னஞ்சல் முகவரி",
+  "phone": "தொலைபேசி எண்",
+  "address": "முகவரி",
+  "employeeId": "ஊழியர் ஐடி",
+  "department": "துறை",
+  "designation": "பதவி",
+  "joiningDate": "சேர்ந்த தேதி",
+  "password": "கடவுச்சொல்",
+  "confirmPassword": "கடவுச்சொல்லை உறுதிசெய்",
+  "role": "பங்கு",
+  "admin": "நிர்வாகி",
+  "employee": "ஊழியர்",
+  "profileUpdated": "சுயவிவரம் புதுப்பிக்கப்பட்டது",
+  "workTypes": "வேலை வகைகள்"
+}

@@ -1,0 +1,12 @@
+{
+  "wizard_title": "Setup & Tracking Health",
+  "wizard_subtitle": "Ensure reliable attendance tracking",
+  "battery_opt": "Battery Optimization Exemption",
+  "autostart": "Auto-Start Permission",
+  "location_always": "Location (Always Allow)",
+  "notifications_perm": "Push Notifications",
+  "continue_anyway": "Continue Anyway",
+  "refresh_health": "Re-check Device Health",
+  "languageSettings": "Language Settings",
+  "resetToDefault": "Reset to Default"
+}

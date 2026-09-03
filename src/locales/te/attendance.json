@@ -1,0 +1,21 @@
+{
+  "title": "హాజరు",
+  "markAttendance": "హాజరు నమోదు చేయండి",
+  "checkInSuccess": "విజయవంతంగా చెక్ ఇన్ అయ్యారు",
+  "checkOutSuccess": "విజయవంతంగా చెక్ అవుట్ అయ్యారు",
+  "locationPermissionRequired": "లొకేషన్ అనుమతి అవసరం",
+  "gpsDisabled": "జీపీఎస్ నిలిపివేయబడింది లేదా సిగ్నల్ పోయింది",
+  "gpsSignalLost": "జీపీఎస్ సిగ్నల్ పోయింది",
+  "workingFrom": "పని చేస్తున్న ప్రదేశం",
+  "office": "ఆఫీస్",
+  "field": "ఫీల్డ్",
+  "remote": "రిమోట్",
+  "warehouse": "వేర్‌హౌస్",
+  "factory": "ఫ్యాక్టరీ",
+  "workType": "పని రకం",
+  "selectWorkType": "పని ప్రదేశాన్ని ఎంచుకోండి",
+  "history": "హాజరు చరిత్ర",
+  "today": "ఈ రోజు",
+  "thisWeek": "ఈ వారం",
+  "thisMonth": "ఈ నెల"
+}

@@ -1,0 +1,12 @@
+{
+  "wizard_title": "ছেটআপ আৰু ট্ৰ্যাকিং স্থিতি",
+  "wizard_subtitle": "নিৰ্ভৰযোগ্য উপস্থিতি ট্ৰ্যাকিং নিশ্চিত কৰক",
+  "battery_opt": "বেটাৰী অপটিমাইজেচন ৰেহাই",
+  "autostart": "অটো-ষ্টাৰ্ট অনুমতি",
+  "location_always": "স্থান (সদায় অনুমতি দিয়ক)",
+  "notifications_perm": "অধিসূচনা",
+  "continue_anyway": "তথাপিতো অব্যাহত ৰাখক",
+  "refresh_health": "পুনৰ পৰীক্ষা কৰক",
+  "languageSettings": "ভাষা ছেটিংছ",
+  "resetToDefault": "পুনৰাই ছেট কৰক"
+}

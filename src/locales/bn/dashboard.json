@@ -1,0 +1,17 @@
+{
+  "title": "ড্যাশবোর্ড",
+  "appName": "এইচআরএমএস এন্টারপ্রাইজ",
+  "welcomeUser": "স্বাগতম, {{name}} 👋",
+  "logout": "লগআউট",
+  "currentWorkMode": "🏢 বর্তমান কাজের মোড: {{mode}}",
+  "todaysWorkMode": "আজকের কাজের মোড",
+  "chooseWorkModeDesc": "আজ বাইরে কাজ করলে ফিল্ড বেছে নিন",
+  "office": "অফিস",
+  "field": "ফিল্ড",
+  "clockedIn": "✓ ক্লক ইন সম্পন্ন",
+  "clockIn": "ক্লক ইন",
+  "clockOut": "ক্লক আউট",
+  "trackingSetupHealth": "ট্র্যাকিং ও সেটআপ অবস্থা",
+  "runDiagnostics": "পরীক্ষা চালান",
+  "welcome": "ফিরে আসার জন্য স্বাগতম,"
+}

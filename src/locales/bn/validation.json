@@ -1,0 +1,13 @@
+{
+  "requiredField": "প্রয়োজনীয় ক্ষেত্র",
+  "invalidEmail": "অকার্যকর ইমেইল ঠিকানা",
+  "passwordTooShort": "পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে",
+  "passwordMismatch": "পাসওয়ার্ড মিলছে না",
+  "loginFailed": "লগইন ব্যর্থ হয়েছে",
+  "networkError": "নেটওয়ার্ক ত্রুটি",
+  "gpsDisabled": "জিপিএস নিষ্ক্রিয়",
+  "locationPermissionRequired": "অবস্থানের অনুমতি প্রয়োজন",
+  "noInternet": "ইন্টারনেট সংযোগ নেই",
+  "serverError": "সার্ভার ত্রুটি",
+  "somethingWentWrong": "কিছু ভুল হয়েছে"
+}

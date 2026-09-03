@@ -1,0 +1,19 @@
+{
+  "title": "ಉದ್ಯೋಗಿ ಡೈರೆಕ್ಟರಿ",
+  "addEmployee": "ಉದ್ಯೋಗಿ ಸೇರಿಸಿ",
+  "name": "ಪೂರ್ಣ ಹೆಸರು",
+  "email": "ಇಮೇಲ್ ವಿಳಾಸ",
+  "phone": "ಫೋನ್ ಸಂಖ್ಯೆ",
+  "address": "ವಿಳಾಸ",
+  "employeeId": "ಉದ್ಯೋಗಿ ಐಡಿ",
+  "department": "ಇಲಾಖೆ",
+  "designation": "ಹುದ್ದೆ",
+  "joiningDate": "ಸೇರ್ಪಡೆಗೊಂಡ ದಿನಾಂಕ",
+  "password": "ಪಾಸ್‌ವರ್ಡ್",
+  "confirmPassword": "ಪಾಸ್‌ವರ್ಡ್ ಖಚಿತಪಡಿಸಿ",
+  "role": "ಪಾತ್ರ",
+  "admin": "ಅಡ್ಮಿನ್",
+  "employee": "ಉದ್ಯೋಗಿ",
+  "profileUpdated": "ಪ್ರೊಫೈಲ್ ಅಪ್‌ಡೇಟ್ ಆಗಿದೆ",
+  "workTypes": "ಕೆಲಸದ ಪ್ರಕಾರಗಳು"
+}

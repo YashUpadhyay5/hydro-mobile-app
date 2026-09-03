@@ -1,0 +1,13 @@
+{
+  "live_title": "थेट कर्मचारी ट्रॅकिंग",
+  "route_replay_title": "मार्ग रीप्ले",
+  "geofence_title": "जिओफेन्स व्यवस्थापन",
+  "geofence_policy": "सक्रिय जिओफेन्स धोरण",
+  "geofence_desc": "कार्यालयीन हद्दीवर आधारित स्वयंचलित ट्रॅकिंग.",
+  "current_location": "सध्याचे स्थान",
+  "gps_active": "जीपीएस सक्रिय",
+  "cell_active": "सेल्युलर टॉवर सक्रिय",
+  "offline_warning": "स्थान हाताने बंद केले आहे!",
+  "radius_label": "त्रिज्या (मीटर)",
+  "add_geofence": "नवीन जिओफेन्स जोडा"
+}

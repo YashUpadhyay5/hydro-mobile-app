@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "উপস্থিতি নথিপুক্ত হ’ল",
+  "leaveApproved": "ছুটী মঞ্জুৰ হ’ল",
+  "leaveRejected": "ছুটী নাকচ হ’ল",
+  "payrollGenerated": "পে'ৰোল প্ৰস্তুত হ’ল",
+  "expenseApproved": "খৰচ অনুমোদন হ’ল",
+  "gpsSignalLost": "জিপিএছ সংকেত হেৰাল",
+  "internetConnected": "ইণ্টাৰনেট সংযুক্ত হ’ল",
+  "internetDisconnected": "ইণ্টাৰনেট বিচ্ছিন্ন হ’ল",
+  "sessionExpired": "ছেছনৰ সময় পাৰ হ’ল",
+  "profileUpdated": "প্রফাইল আপডেট কৰা হ’ল",
+  "passwordChanged": "পাছৱৰ্ড সলনি কৰা হ’ল"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "ഹാജർ",
+  "markAttendance": "ഹാജർ രേഖപ്പെടുത്തുക",
+  "checkInSuccess": "വിജയകരമായി ചെക്ക് ഇൻ ചെയ്തു",
+  "checkOutSuccess": "വിജയകരമായി ചെക്ക് ഔട്ട് ചെയ്തു",
+  "locationPermissionRequired": "ലൊക്കേഷൻ അനുമതി ആവശ്യമാണ്",
+  "gpsDisabled": "ജിപിഎസ് സിഗ്നൽ നഷ്ടപ്പെട്ടു",
+  "gpsSignalLost": "ജിപിഎസ് സിഗ്നൽ നഷ്ടപ്പെട്ടു",
+  "workingFrom": "ജോലി ചെയ്യുന്ന സ്ഥലം",
+  "office": "ഓഫീസ്",
+  "field": "ഫീൽഡ്",
+  "remote": "റിമോട്ട്",
+  "warehouse": "വെയർഹൗസ്",
+  "factory": "ഫാക്ടറി",
+  "workType": "ജോലി തരം",
+  "selectWorkType": "ജോലി സ്ഥലം തിരഞ്ഞെടുക്കുക",
+  "history": "ഹാജർ ചരിത്രം",
+  "today": "ഇന്ന്",
+  "thisWeek": "ഈ ആഴ്ച",
+  "thisMonth": "ഈ മാസം"
+}

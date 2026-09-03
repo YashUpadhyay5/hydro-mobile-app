@@ -1,0 +1,17 @@
+{
+  "title": "डैशबोर्ड",
+  "appName": "एचआरएमएस एंटरप्राइज",
+  "welcomeUser": "स्वागत है, {{name}} 👋",
+  "logout": "लॉगआउट",
+  "currentWorkMode": "🏢 वर्तमान कार्य मोड: {{mode}}",
+  "todaysWorkMode": "आज का कार्य मोड",
+  "chooseWorkModeDesc": "यदि आज बाहर काम कर रहे हैं तो फील्ड चुनें",
+  "office": "कार्यालय",
+  "field": "फील्ड",
+  "clockedIn": "✓ क्लॉक इन हुआ",
+  "clockIn": "क्लॉक इन",
+  "clockOut": "क्लॉक आउट",
+  "trackingSetupHealth": "ट्रैकिंग और सेटअप स्वास्थ्य",
+  "runDiagnostics": "डायग्नोस्टिक्स चलाएं",
+  "welcome": "वापसी पर स्वागत है,"
+}

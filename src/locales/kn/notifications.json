@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "ಹಾಜರಾತಿ ಗುರುತಿಸಲಾಗಿದೆ",
+  "leaveApproved": "ರಜೆ ಮಂಜೂರಾಗಿದೆ",
+  "leaveRejected": "ರಜೆ ತಿರಸ್ಕರಿಸಲಾಗಿದೆ",
+  "payrollGenerated": "ಪೇರೋಲ್ ರಚಿಸಲಾಗಿದೆ",
+  "expenseApproved": "ವೆಚ್ಚ ಮಂಜೂರಾಗಿದೆ",
+  "gpsSignalLost": "ಜಿಪಿಎಸ್ ಸಿಗ್ನಲ್ ಕಳೆದುಹೋಗಿದೆ",
+  "internetConnected": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕಗೊಂಡಿದೆ",
+  "internetDisconnected": "ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಕಡಿತಗೊಂಡಿದೆ",
+  "sessionExpired": "ಸೆಷನ್ ಅವಧಿ ಮುಗಿದಿದೆ",
+  "profileUpdated": "ಪ್ರೊಫೈಲ್ ನವೀಕರಿಸಲಾಗಿದೆ",
+  "passwordChanged": "ಪಾಸ್‌ವರ್ಡ್ ಬದಲಾಯಿಸಲಾಗಿದೆ"
+}

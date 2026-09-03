@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "उपस्थिती यशस्वीरित्या नोंदवली",
+  "leaveApproved": "रजा मंजूर झाली",
+  "leaveRejected": "रजा नाकारली",
+  "payrollGenerated": "पेरोल यशस्वीरित्या तयार झाला",
+  "expenseApproved": "खर्च मंजूर झाला",
+  "gpsSignalLost": "जीपीएस सिग्नल हरवला",
+  "internetConnected": "इंटरनेट कनेक्ट झाले",
+  "internetDisconnected": "इंटरनेट डिस्कनेक्ट झाले",
+  "sessionExpired": "सत्र संपले",
+  "profileUpdated": "प्रोफाइल अद्ययावत केले",
+  "passwordChanged": "पासवर्ड यशस्वीरित्या बदलला"
+}

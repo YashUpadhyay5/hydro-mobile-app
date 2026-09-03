@@ -1,0 +1,16 @@
+{
+  "title": "પેરોલ",
+  "generatePayroll": "પેરોલ જનરેટ કરો",
+  "payslip": "પગાર સ્લિપ",
+  "salary": "પગાર",
+  "basicSalary": "મૂળ પગાર",
+  "allowances": "ભથ્થાં",
+  "deductions": "કાપ",
+  "netSalary": "ચોખ્ખો પગાર",
+  "payrollGenerated": "પેરોલ સફળતાપૂર્વક જનરેટ થયો",
+  "month": "મહિનો",
+  "year": "વર્ષ",
+  "downloadPayslip": "પગાર સ્લિપ ડાઉનલોડ કરો",
+  "statusPaid": "ચુકવાયેલ",
+  "statusPending": "પેન્ડિંગ"
+}

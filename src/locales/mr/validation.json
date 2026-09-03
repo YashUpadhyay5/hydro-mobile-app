@@ -1,0 +1,13 @@
+{
+  "requiredField": "आवश्यक फील्ड",
+  "invalidEmail": "अवैध ईमेल पत्ता",
+  "passwordTooShort": "पासवर्ड किमान ६ वर्णांचा असावा",
+  "passwordMismatch": "पासवर्ड जुळत नाहीत",
+  "loginFailed": "लॉगिन अयशस्वी",
+  "networkError": "नेटवर्क त्रुटी",
+  "gpsDisabled": "जीपीएस अक्षम आहे",
+  "locationPermissionRequired": "स्थान परवानगी आवश्यक आहे",
+  "noInternet": "इंटरनेट कनेक्शन नाही",
+  "serverError": "सर्व्हर त्रुटी",
+  "somethingWentWrong": "काहीतरी चुकीचे घडले"
+}

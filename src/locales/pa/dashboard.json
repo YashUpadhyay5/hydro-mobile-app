@@ -1,0 +1,17 @@
+{
+  "title": "ਡੈਸ਼ਬੋਰਡ",
+  "appName": "ਐਚ.ਆਰ.ਐਮ.ਐਸ ਐਂਟਰਪ੍ਰਾਈਜ਼",
+  "welcomeUser": "ਜੀ ਆਇਆਂ ਨੂੰ, {{name}} 👋",
+  "logout": "ਲੌਗਆਉਟ",
+  "currentWorkMode": "🏢 ਮੌਜੂਦਾ ਕੰਮ ਦਾ ਮੋਡ: {{mode}}",
+  "todaysWorkMode": "ਅੱਜ ਦਾ ਕੰਮ ਦਾ ਮੋਡ",
+  "chooseWorkModeDesc": "ਜੇਕਰ ਅੱਜ ਬਾਹਰ ਕੰਮ ਕਰ ਰਹੇ ਹੋ ਤਾਂ ਫੀਲਡ ਚੁਣੋ",
+  "office": "ਦਫ਼ਤਰ",
+  "field": "ਫੀਲਡ",
+  "clockedIn": "✓ ਕਲਾਕ ਇਨ ਹੋਇਆ",
+  "clockIn": "ਕਲਾਕ ਇਨ",
+  "clockOut": "ਕਲਾਕ ਆਉਟ",
+  "trackingSetupHealth": "ਟ੍ਰੈਕਿੰਗ ਅਤੇ ਸੈੱਟਅੱਪ ਸਥਿਤੀ",
+  "runDiagnostics": "ਜਾਂਚ ਚਲਾਓ",
+  "welcome": "ਜੀ ਆਇਆਂ ਨੂੰ,"
+}

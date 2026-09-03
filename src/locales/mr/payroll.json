@@ -1,0 +1,16 @@
+{
+  "title": "पेरोल",
+  "generatePayroll": "पेरोल तयार करा",
+  "payslip": "पगार स्लिप",
+  "salary": "पगार",
+  "basicSalary": "मूळ पगार",
+  "allowances": "भत्ते",
+  "deductions": "कपात",
+  "netSalary": "निव्वळ पगार",
+  "payrollGenerated": "पेरोल यशस्वीरित्या तयार झाला",
+  "month": "महिना",
+  "year": "वर्ष",
+  "downloadPayslip": "पगार स्लिप डाउनलोड करा",
+  "statusPaid": "भरलेले",
+  "statusPending": "लंबित"
+}
