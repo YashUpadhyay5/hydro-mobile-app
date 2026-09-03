@@ -52,7 +52,7 @@ export const generateDiagnosticsReport = async (): Promise<DiagnosticsReportData
     },
     apiConfig: {
       activeBaseUrl: API_BASE_URL,
-      isProductionBackend: API_BASE_URL === 'http://45.122.121.237:8000/api'
+      isProductionBackend: API_BASE_URL === 'https://hydro-hrms-app.onrender.com/api'
     },
     roomDiagnostics: roomDiag,
     syncSessionId: getActiveJSSyncSession(),

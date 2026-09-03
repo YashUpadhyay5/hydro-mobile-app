@@ -78,7 +78,7 @@ export default function DeveloperDiagnosticsScreen() {
             <Text style={styles.cardTitle}>Backend API Configuration</Text>
             <Text style={styles.label}>Active API Base URL:</Text>
             <Text style={styles.codeText}>{diagnostics?.apiConfig.activeBaseUrl}</Text>
-            <Text style={styles.label}>Production Host Match (http://45.122.121.237:8000/api):</Text>
+            <Text style={styles.label}>Production Host Match (https://hydro-hrms-app.onrender.com/api):</Text>
             <Text style={[styles.boldText, { color: diagnostics?.apiConfig.isProductionBackend ? '#10b981' : '#f59e0b' }]}>
               {diagnostics?.apiConfig.isProductionBackend ? 'VERIFIED (PRODUCTION)' : 'CUSTOM / DEV ENDPOINT'}
             </Text>

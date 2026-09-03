@@ -35,7 +35,7 @@ class LocationSyncWorker(
         val sharedPrefs = appContext.getSharedPreferences("LocationTrackingPrefs", Context.MODE_PRIVATE)
         val isClockedIn = sharedPrefs.getBoolean("isClockedIn", false)
         val rawApiBaseUrl = sharedPrefs.getString("apiBaseUrl", null)
-        val apiBaseUrl = if (!rawApiBaseUrl.isNullOrEmpty()) rawApiBaseUrl else "http://45.122.121.237:8000/api"
+        val apiBaseUrl = if (!rawApiBaseUrl.isNullOrEmpty()) rawApiBaseUrl else "https://hydro-hrms-app.onrender.com/api"
 
         val db = AppDatabase.getDatabase(appContext)
         val dao = db.offlineLocationDao()

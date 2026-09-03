@@ -52,7 +52,7 @@ export const checkStartupBackendUrl = () => {
   logDebug(
     'BACKEND_URL',
     'STARTUP_CHECK',
-    API_BASE_URL === 'http://45.122.121.237:8000/api' ? 'SUCCESS' : 'WARNING',
+    API_BASE_URL === 'https://hydro-hrms-app.onrender.com/api' ? 'SUCCESS' : 'WARNING',
     undefined,
     `Active API Endpoint: ${API_BASE_URL}`
   );
