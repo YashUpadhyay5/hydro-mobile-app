@@ -31,7 +31,8 @@ export const loginUser = async (credentials: { email: string, password: string }
       { email: "employee2@hrms.com", password: "password123", id: "emp2", name: "Yash", role: "EMPLOYEE", designation: "OFFICE", workTypes: ["Office"] },
       { email: "employee3@hrms.com", password: "password123", id: "emp3", name: "Rahul", role: "EMPLOYEE", designation: "OFFICE", workTypes: ["Field", "Remote"] },
       { email: "employee4@hrms.com", password: "password123", id: "emp4", name: "Pooja", role: "EMPLOYEE", designation: "OFFICE", workTypes: ["Warehouse", "Factory"] },
-      { email: "employee5@hrms.com", password: "password123", id: "emp5", name: "Sneha", role: "EMPLOYEE", designation: "OFFICE", workTypes: ["Office", "Field", "Remote", "Warehouse", "Factory"] }
+      { email: "employee5@hrms.com", password: "password123", id: "emp5", name: "Sneha", role: "EMPLOYEE", designation: "OFFICE", workTypes: ["Office", "Field", "Remote", "Warehouse", "Factory"] },
+      { email: "yashhydromaterial@gmail.com", password: "password123", id: "HMPL02", name: "Yash Material", role: "EMPLOYEE", designation: "FIELD", workTypes: ["Field", "Office", "Remote"] }
     ];
 
     const matched = dummyUsers.find(

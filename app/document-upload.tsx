@@ -62,7 +62,8 @@ export default function DocumentUploadScreen() {
     { id: 'emp2', name: 'Yash', email: 'employee2@hrms.com' },
     { id: 'emp3', name: 'Rahul', email: 'employee3@hrms.com' },
     { id: 'emp4', name: 'Pooja', email: 'employee4@hrms.com' },
-    { id: 'emp5', name: 'Sneha', email: 'employee5@hrms.com' }
+    { id: 'emp5', name: 'Sneha', email: 'employee5@hrms.com' },
+    { id: 'HMPL02', name: 'Yash Material', email: 'yashhydromaterial@gmail.com' }
   ];
 
   // 1. Take photo using device camera
