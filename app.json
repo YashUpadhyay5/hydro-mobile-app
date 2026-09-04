@@ -1,7 +1,8 @@
 {
   "expo": {
     "name": "HRMS Mobile",
-    "slug": "mobile-app",
+    "slug": "hydro-cloud-app",
+    "owner": "yashupadhyay486",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
