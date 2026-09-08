@@ -35,7 +35,8 @@ logcat_*.txt
 temp_*.txt
 
 # Debug / device dumps
-*.xml
+!**/AndroidManifest.xml
+!android/**/*.xml
 screen.png
 test_sample.pdf
 
