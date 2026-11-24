@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "HRMS Mobile",
-    "slug": "mobile-app",
+    "slug": "hydro-cloud-app",
     "version": "1.5.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -101,9 +101,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "6f53308d-c060-4058-b155-2c5419698f13"
+        "projectId": "3b82a4ad-4528-4aee-aaf2-522dc6f204f5"
       }
     },
-    "owner": "abcd159"
+    "owner": "yashupadhyay486"
   }
 }

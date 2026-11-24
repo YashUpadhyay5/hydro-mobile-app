@@ -10,6 +10,10 @@
     },
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_DOCTOR_ENABLE": "0",
+        "EXPO_PUBLIC_API_URL": "https://hydro-hrms-backend.onrender.com/api"
+      },
       "android": {
         "buildType": "apk",
         "image": "latest"
@@ -20,6 +24,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "EXPO_DOCTOR_ENABLE": "0",
+        "EXPO_PUBLIC_API_URL": "https://hydro-hrms-backend.onrender.com/api"
+      },
       "android": {
         "buildType": "apk"
       }

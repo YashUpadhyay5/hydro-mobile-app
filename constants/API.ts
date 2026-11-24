@@ -20,7 +20,7 @@ export const normalizeApiBaseUrl = (input: string): string => {
 
 // The backend this build talks to. It is supplied by the environment (see .env.example) and inlined
 // by Metro, so it has to be read as a literal `process.env.EXPO_PUBLIC_API_URL`.
-const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || 'http://45.122.121.237:8000/api';
+const configuredApiUrl = process.env.EXPO_PUBLIC_API_URL?.trim() || 'https://hydro-hrms-backend.onrender.com/api';
 
 export const DEFAULT_API_BASE_URL: string = normalizeApiBaseUrl(configuredApiUrl);
 
