@@ -12,6 +12,7 @@
       "distribution": "internal",
       "env": {
         "EXPO_DOCTOR_ENABLE": "0",
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "1",
         "EXPO_PUBLIC_API_URL": "https://hydro-hrms-backend.onrender.com/api"
       },
       "android": {
@@ -26,6 +27,7 @@
       "autoIncrement": true,
       "env": {
         "EXPO_DOCTOR_ENABLE": "0",
+        "EXPO_USE_COMMUNITY_AUTOLINKING": "1",
         "EXPO_PUBLIC_API_URL": "https://hydro-hrms-backend.onrender.com/api"
       },
       "android": {
