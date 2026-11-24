@@ -35,9 +35,8 @@ logcat_*.txt
 temp_*.txt
 
 # Debug / device dumps
-*.xml
-# ...but not real source manifests (the tracker module's declares its boot receiver)
-!modules/**/src/main/AndroidManifest.xml
+!**/AndroidManifest.xml
+!android/**/*.xml
 screen.png
 test_sample.pdf
 
