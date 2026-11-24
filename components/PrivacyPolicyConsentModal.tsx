@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Device from 'expo-device';
 import api from '@/services/api';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 export const PRIVACY_POLICY_STORAGE_KEY = '@hrms_privacy_policy_accepted_v1';
 
@@ -30,6 +31,7 @@ export function PrivacyPolicyConsentModal({
   onAccept,
   user,
 }: PrivacyPolicyConsentModalProps) {
+  const { t } = useTranslationSafe(['auth', 'common']);
   const insets = useSafeAreaInsets();
   const [agreedAll, setAgreedAll] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +41,7 @@ export function PrivacyPolicyConsentModal({
   const handleAcceptSubmit = async () => {
     if (!agreedAll) {
       Alert.alert(
-        'Required Acknowledgment',
+        t('auth:required_acknowledgment', { defaultValue: 'Required Acknowledgment' }),
         'Please review and check the acceptance checkbox to confirm your agreement to the Enterprise Privacy Policy and Operational Disclosures.'
       );
       return;
@@ -94,7 +96,7 @@ export function PrivacyPolicyConsentModal({
       onAccept();
     } catch (err: any) {
       console.error('[PrivacyPolicyConsent Error]:', err);
-      Alert.alert('Processing Error', 'Failed to save consent. Please try again.');
+      Alert.alert(t('auth:processing_error', { defaultValue: 'Processing Error' }), t('auth:failed_to_save_consent_please_try', { defaultValue: 'Failed to save consent. Please try again.' }));
     } finally {
       setIsSubmitting(false);
     }
@@ -102,12 +104,12 @@ export function PrivacyPolicyConsentModal({
 
   const handleDecline = () => {
     Alert.alert(
-      'Policy Agreement Required',
+      t('auth:policy_agreement_required', { defaultValue: 'Policy Agreement Required' }),
       'Corporate HRMS requires acceptance of the privacy policy and operational disclosures to log attendance, process payroll, and validate duty operations. You cannot proceed without accepting.',
       [
-        { text: 'Review Document', style: 'cancel' },
+        { text: t('auth:review_document', { defaultValue: 'Review Document' }), style: 'cancel' },
         { 
-          text: 'Exit App', 
+          text: t('auth:exit_app', { defaultValue: 'Exit App' }), 
           style: 'destructive',
           onPress: () => {
             if (Platform.OS === 'android') {
@@ -133,12 +135,12 @@ export function PrivacyPolicyConsentModal({
           <View style={{ flex: 1 }}>
             <View style={styles.badgeRow}>
               <View style={styles.complianceTag}>
-                <Text style={styles.complianceTagText}>OFFICIAL ENTERPRISE POLICY</Text>
+                <Text style={styles.complianceTagText}>{t('auth:official_enterprise_policy', { defaultValue: 'OFFICIAL ENTERPRISE POLICY' })}</Text>
               </View>
-              <Text style={styles.docVersionText}>DOC ID: HRMS-POL-V1.0</Text>
+              <Text style={styles.docVersionText}>{t('auth:doc_id_hrms_pol_v1_0', { defaultValue: 'DOC ID: HRMS-POL-V1.0' })}</Text>
             </View>
-            <Text style={styles.docMainTitle}>Privacy Policy & Operational Disclosures</Text>
-            <Text style={styles.docSubtitle}>Employee Data Protection, Shift Telemetry & Statutory Compliance</Text>
+            <Text style={styles.docMainTitle}>{t('auth:privacy_policy_and_operational_disclosures', { defaultValue: 'Privacy Policy & Operational Disclosures' })}</Text>
+            <Text style={styles.docSubtitle}>{t('auth:employee_data_protection_shift_telemetry_a', { defaultValue: 'Employee Data Protection, Shift Telemetry & Statutory Compliance' })}</Text>
           </View>
         </View>
 
@@ -149,7 +151,7 @@ export function PrivacyPolicyConsentModal({
             {/* Preamble */}
             <View style={styles.docSection}>
               <Text style={styles.preambleText}>
-                <Text style={styles.boldPreamble}>PREAMBLE: </Text>
+                <Text style={styles.boldPreamble}>{t('auth:preamble', { defaultValue: 'PREAMBLE:' })} </Text>
                 This Enterprise Privacy Policy and Operational Disclosure Agreement governs the secure collection, processing, and transmission of shift telemetry and duty records by the Corporate HRMS Mobile Platform. To maintain data transparency and organizational compliance, please review the operational terms outlined below.
               </Text>
             </View>
@@ -158,15 +160,15 @@ export function PrivacyPolicyConsentModal({
 
             {/* Article 1: Background Location Telemetry */}
             <View style={styles.docSection}>
-              <Text style={styles.sectionHeading}>ARTICLE 1: OPERATIONAL LOCATION & SHIFT TELEMETRY</Text>
+              <Text style={styles.sectionHeading}>{t('auth:article_1_operational_location_and_shift', { defaultValue: 'ARTICLE 1: OPERATIONAL LOCATION & SHIFT TELEMETRY' })}</Text>
               <Text style={styles.paragraphText}>
-                1.1 <Text style={styles.clauseBold}>Continuous Shift Validation:</Text> The application requires high-accuracy GPS and background location access (<Text style={styles.italicHighlight}>"Allow all the time"</Text>) to verify workplace geofence boundaries, record duty travel routes, and accurately calculate total working hours.
+                1.1 <Text style={styles.clauseBold}>{t('auth:continuous_shift_validation', { defaultValue: 'Continuous Shift Validation:' })}</Text> The application requires high-accuracy GPS and background location access (<Text style={styles.italicHighlight}>{t('auth:allow_all_the_time', { defaultValue: '"Allow all the time"' })}</Text>) to verify workplace geofence boundaries, record duty travel routes, and accurately calculate total working hours.
               </Text>
               <Text style={styles.paragraphText}>
-                1.2 <Text style={styles.clauseBold}>Duty-Hours Restriction Guarantee:</Text> Shift telemetry and location coordinates are captured <Text style={styles.underlineHighlight}>strictly during active shift hours</Text> when you are Clocked In. Telemetry logging automatically halts immediately upon Clock Out or when on an approved leave.
+                1.2 <Text style={styles.clauseBold}>{t('auth:duty_hours_restriction_guarantee', { defaultValue: 'Duty-Hours Restriction Guarantee:' })}</Text> {t('auth:shift_telemetry_and_location_coordinates_a', { defaultValue: 'Shift telemetry and location coordinates are captured' })} <Text style={styles.underlineHighlight}>{t('auth:strictly_during_active_shift_hours', { defaultValue: 'strictly during active shift hours' })}</Text> when you are Clocked In. Telemetry logging automatically halts immediately upon Clock Out or when on an approved leave.
               </Text>
               <Text style={styles.paragraphText}>
-                1.3 <Text style={styles.clauseBold}>Anti-Tampering Protocol:</Text> The system validates coordinate integrity. Use of mock location providers, GPS spoofing utilities, or deliberate telemetry disruption is strictly logged and subject to organizational HR review.
+                1.3 <Text style={styles.clauseBold}>{t('auth:anti_tampering_protocol', { defaultValue: 'Anti-Tampering Protocol:' })}</Text> The system validates coordinate integrity. Use of mock location providers, GPS spoofing utilities, or deliberate telemetry disruption is strictly logged and subject to organizational HR review.
               </Text>
             </View>
 
@@ -174,15 +176,15 @@ export function PrivacyPolicyConsentModal({
 
             {/* Article 2: Hardware Permissions & Purpose Limitation */}
             <View style={styles.docSection}>
-              <Text style={styles.sectionHeading}>ARTICLE 2: HARDWARE ACCESS & PURPOSE LIMITATION</Text>
+              <Text style={styles.sectionHeading}>{t('auth:article_2_hardware_access_and_purpose', { defaultValue: 'ARTICLE 2: HARDWARE ACCESS & PURPOSE LIMITATION' })}</Text>
               <Text style={styles.paragraphText}>
-                2.1 <Text style={styles.clauseBold}>Camera Hardware:</Text> Accessed exclusively when initiated by the employee for geotagged selfie attendance check-in, official document scanning, and expense claim receipt attachment. The camera is never accessed in the background.
+                2.1 <Text style={styles.clauseBold}>{t('auth:camera_hardware', { defaultValue: 'Camera Hardware:' })}</Text> Accessed exclusively when initiated by the employee for geotagged selfie attendance check-in, official document scanning, and expense claim receipt attachment. The camera is never accessed in the background.
               </Text>
               <Text style={styles.paragraphText}>
-                2.2 <Text style={styles.clauseBold}>Local Storage & Photo Library:</Text> Storage permissions are requested solely on-demand when the user chooses to attach documents in Chat, upload certificates in the Document Vault, attach bills in Expenses, or select a profile picture.
+                2.2 <Text style={styles.clauseBold}>{t('auth:local_storage_and_photo_library', { defaultValue: 'Local Storage & Photo Library:' })}</Text> Storage permissions are requested solely on-demand when the user chooses to attach documents in Chat, upload certificates in the Document Vault, attach bills in Expenses, or select a profile picture.
               </Text>
               <Text style={styles.paragraphText}>
-                2.3 <Text style={styles.clauseBold}>Push Notifications & Foreground Services:</Text> Utilized to provide persistent notification status of active shifts, clock-out alarms, supervisor dispatches, and emergency organization broadcasts.
+                2.3 <Text style={styles.clauseBold}>{t('auth:push_notifications_and_foreground_services', { defaultValue: 'Push Notifications & Foreground Services:' })}</Text> Utilized to provide persistent notification status of active shifts, clock-out alarms, supervisor dispatches, and emergency organization broadcasts.
               </Text>
             </View>
 
@@ -190,9 +192,9 @@ export function PrivacyPolicyConsentModal({
 
             {/* Article 3: Battery Optimization & Service Continuity */}
             <View style={styles.docSection}>
-              <Text style={styles.sectionHeading}>ARTICLE 3: BATTERY OPTIMIZATION & CONTINUITY</Text>
+              <Text style={styles.sectionHeading}>{t('auth:article_3_battery_optimization_and_continu', { defaultValue: 'ARTICLE 3: BATTERY OPTIMIZATION & CONTINUITY' })}</Text>
               <Text style={styles.paragraphText}>
-                3.1 <Text style={styles.clauseBold}>Background Service Integrity:</Text> Exemption from aggressive OS battery optimizations is required to prevent background services from being terminated during active duty, ensuring accurate shift hour calculation.
+                3.1 <Text style={styles.clauseBold}>{t('auth:background_service_integrity', { defaultValue: 'Background Service Integrity:' })}</Text> Exemption from aggressive OS battery optimizations is required to prevent background services from being terminated during active duty, ensuring accurate shift hour calculation.
               </Text>
             </View>
 
@@ -200,12 +202,12 @@ export function PrivacyPolicyConsentModal({
 
             {/* Article 4: Data Security, Encryption & Privacy Guarantees */}
             <View style={styles.docSection}>
-              <Text style={styles.sectionHeading}>ARTICLE 4: DATA ENCRYPTION & THIRD-PARTY PROHIBITION</Text>
+              <Text style={styles.sectionHeading}>{t('auth:article_4_data_encryption_and_third', { defaultValue: 'ARTICLE 4: DATA ENCRYPTION & THIRD-PARTY PROHIBITION' })}</Text>
               <Text style={styles.paragraphText}>
-                4.1 <Text style={styles.clauseBold}>End-to-End Encryption:</Text> All telemetry, personal records, and communications are encrypted in transit via TLS 1.3 and encrypted at rest using AES-256 standards.
+                4.1 <Text style={styles.clauseBold}>{t('auth:end_to_end_encryption', { defaultValue: 'End-to-End Encryption:' })}</Text> All telemetry, personal records, and communications are encrypted in transit via TLS 1.3 and encrypted at rest using AES-256 standards.
               </Text>
               <Text style={styles.paragraphText}>
-                4.2 <Text style={styles.clauseBold}>Zero Commercial Sharing:</Text> Employee data is strictly utilized for internal attendance verification, safety compliance, and payroll computation. Personal data is never sold, leased, or disclosed to any third-party marketing entities.
+                4.2 <Text style={styles.clauseBold}>{t('auth:zero_commercial_sharing', { defaultValue: 'Zero Commercial Sharing:' })}</Text> Employee data is strictly utilized for internal attendance verification, safety compliance, and payroll computation. Personal data is never sold, leased, or disclosed to any third-party marketing entities.
               </Text>
             </View>
 
@@ -214,7 +216,7 @@ export function PrivacyPolicyConsentModal({
             {/* Legal Notice */}
             <View style={styles.auditBox}>
               <Text style={styles.auditText}>
-                ⚖️ <Text style={{ fontWeight: 'bold', color: '#F1F5F9' }}>Statutory Audit Notice:</Text> Upon acceptance, an immutable compliance record containing your user identity, device model, IP address, and acceptance timestamp will be securely logged in the organizational compliance audit repository.
+                ⚖️ <Text style={{ fontWeight: 'bold', color: '#F1F5F9' }}>{t('auth:statutory_audit_notice', { defaultValue: 'Statutory Audit Notice:' })}</Text> Upon acceptance, an immutable compliance record containing your user identity, device model, IP address, and acceptance timestamp will be securely logged in the organizational compliance audit repository.
               </Text>
             </View>
 
@@ -244,7 +246,7 @@ export function PrivacyPolicyConsentModal({
             onPress={handleDecline}
             activeOpacity={0.8}
           >
-            <Text style={styles.declineButtonText}>Decline</Text>
+            <Text style={styles.declineButtonText}>{t('auth:decline', { defaultValue: 'Decline' })}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -258,7 +260,7 @@ export function PrivacyPolicyConsentModal({
             ) : (
               <View style={styles.btnContentRow}>
                 <Ionicons name="shield-checkmark-outline" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.acceptButtonText}>Accept & Continue</Text>
+                <Text style={styles.acceptButtonText}>{t('auth:accept_and_continue', { defaultValue: 'Accept & Continue' })}</Text>
               </View>
             )}
           </TouchableOpacity>

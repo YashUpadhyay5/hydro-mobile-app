@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import CurrentActivityCard from "@/components/CurrentActivityCard";
 import { useTranslationSafe } from "@/src/hooks/useTranslationSafe";
 import { 
   View, 
@@ -13,7 +14,7 @@ import {
   Linking
 } from "react-native";
 import { useState, useCallback } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from 'expo-location';
 import * as Network from 'expo-network';
@@ -25,6 +26,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import api from "@/services/api";
+import { parseHolidayDate } from "@/utils/holidayDate";
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 interface Holiday {
   id: string;
@@ -56,58 +59,9 @@ interface Announcement {
   author?: string;
 }
 
-function parseHolidayDate(dateStr: string): Date | null {
-  if (!dateStr || typeof dateStr !== 'string') return null;
-  const trimmed = dateStr.trim();
-  
-  // 1. ISO format: YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
-    const [y, m, d] = trimmed.split('-').map(Number);
-    return new Date(y, m - 1, d);
-  }
-
-  // 2. Format: DD-MM-YYYY or DD/MM/YYYY
-  if (/^\d{2}[-/]\d{2}[-/]\d{4}$/.test(trimmed)) {
-    const [d, m, y] = trimmed.split(/[-/]/).map(Number);
-    return new Date(y, m - 1, d);
-  }
-
-  const monthMap: Record<string, number> = {
-    jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5,
-    jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11
-  };
-
-  // 3. Format: "15 Aug 2026" or "15 August 2026"
-  const dayMonthYearMatch = trimmed.match(/^(\d{1,2})\s+([A-Za-z]+),?\s+(\d{4})$/);
-  if (dayMonthYearMatch) {
-    const d = parseInt(dayMonthYearMatch[1], 10);
-    const monthStr = dayMonthYearMatch[2].substring(0, 3).toLowerCase();
-    const y = parseInt(dayMonthYearMatch[3], 10);
-    if (monthMap[monthStr] !== undefined) {
-      return new Date(y, monthMap[monthStr], d);
-    }
-  }
-
-  // 4. Format: "Aug 15, 2026" or "August 15 2026"
-  const monthDayYearMatch = trimmed.match(/^([A-Za-z]+)\s+(\d{1,2}),?\s+(\d{4})$/);
-  if (monthDayYearMatch) {
-    const monthStr = monthDayYearMatch[1].substring(0, 3).toLowerCase();
-    const d = parseInt(monthDayYearMatch[2], 10);
-    const y = parseInt(monthDayYearMatch[3], 10);
-    if (monthMap[monthStr] !== undefined) {
-      return new Date(y, monthMap[monthStr], d);
-    }
-  }
-
-  const parsed = new Date(trimmed);
-  if (!isNaN(parsed.getTime())) {
-    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
-  }
-  return null;
-}
-
 export default function HomeScreen() {
   const { user, setUser, refreshUserProfile } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['dashboard', 'common', 'attendance']);
   const [isWorkTypeModalVisible, setIsWorkTypeModalVisible] = useState(false);
@@ -226,7 +180,7 @@ export default function HomeScreen() {
             id: String(a.id || `ann_${idx}`),
             title: a.title || 'Company Announcement',
             description: a.description || a.message || a.content || a.body || '',
-            datePosted: a.datePosted || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent'),
+            datePosted: a.datePosted || (a.createdAt ? new Date(a.createdAt).toLocaleDateString(getDateLocale(), { month: 'short', day: '2-digit', year: 'numeric' }) : 'Recent'),
             priority: a.priority || 'General',
             author: a.author || (a.target_audience ? `Audience: ${a.target_audience}` : 'HR Management')
           }));
@@ -352,11 +306,11 @@ export default function HomeScreen() {
           if (!hasGps) {
             setClockLoading(false);
             Alert.alert(
-              "Enable GPS",
-              "Please turn on Location / GPS services on your device to clock in.",
+              t('dashboard:enable_gps', { defaultValue: 'Enable GPS' }),
+              t('dashboard:please_turn_on_location_gps_services', { defaultValue: 'Please turn on Location / GPS services on your device to clock in.' }),
               [
-                { text: "Cancel", style: "cancel" },
-                { text: "Settings", onPress: () => Linking.openSettings() }
+                { text: t('common:cancel', { defaultValue: 'Cancel' }), style: "cancel" },
+                { text: t('dashboard:settings', { defaultValue: 'Settings' }), onPress: () => Linking.openSettings() }
               ]
             );
             return;
@@ -372,11 +326,11 @@ export default function HomeScreen() {
           if (fgStatus !== 'granted') {
             setClockLoading(false);
             Alert.alert(
-              "Location Permission Required",
-              "Location permission is needed to record attendance. Please allow location access in settings.",
+              t('dashboard:location_permission_required', { defaultValue: 'Location Permission Required' }),
+              t('dashboard:location_permission_is_needed_to_record', { defaultValue: 'Location permission is needed to record attendance. Please allow location access in settings.' }),
               [
-                { text: "Cancel", style: "cancel" },
-                { text: "Open Settings", onPress: () => Linking.openSettings() }
+                { text: t('common:cancel', { defaultValue: 'Cancel' }), style: "cancel" },
+                { text: t('dashboard:open_settings', { defaultValue: 'Open Settings' }), onPress: () => Linking.openSettings() }
               ]
             );
             return;
@@ -435,10 +389,10 @@ export default function HomeScreen() {
             <Ionicons name="warning" size={24} color="#EF4444" />
             <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#FCA5A5' : '#991B1B' }}>
-                GPS / Location Turned OFF
+                {t('dashboard:gps_location_turned_off', { defaultValue: 'GPS / Location Turned OFF' })}
               </Text>
               <Text style={{ fontSize: 11, color: isDark ? '#F87171' : '#B91C1C', marginTop: 2 }}>
-                Shift attendance tracking is paused. Please enable your phone GPS immediately to avoid attendance loss.
+                {t('dashboard:shift_attendance_tracking_is_paused_please', { defaultValue: 'Shift attendance tracking is paused. Please enable your phone GPS immediately to avoid attendance loss.' })}
               </Text>
             </View>
           </View>
@@ -460,7 +414,7 @@ export default function HomeScreen() {
                 isDark && { color: '#94A3B8' },
                 currentWorkMode === 'OFFICE' && (isDark ? { color: '#0F172A', fontWeight: '800' } : styles.segmentTextActive)
               ]}>
-                🏢 Office Shift
+                {t('dashboard:office_shift', { defaultValue: '🏢 Office Shift' })}
               </Text>
             </TouchableOpacity>
 
@@ -477,11 +431,14 @@ export default function HomeScreen() {
                 isDark && { color: '#94A3B8' },
                 currentWorkMode === 'FIELD' && (isDark ? { color: '#0F172A', fontWeight: '800' } : styles.segmentTextActive)
               ]}>
-                📍 Field Duty
+                {t('dashboard:field_duty', { defaultValue: '📍 Field Duty' })}
               </Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Day Activities: what the employee is doing now, or the way to start one */}
+        <CurrentActivityCard />
 
         {/* Glossy Black Hero Shift Tracking Card with Pure White Font */}
         <View style={[styles.glossyBlackHeroCard, isClockedIn && styles.glossyBlackHeroCardClockedIn]}>
@@ -505,7 +462,7 @@ export default function HomeScreen() {
           {/* Worked Time & Estimated Checkout */}
           <View style={styles.timerContainer}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.timerLabel}>Worked Time Today</Text>
+              <Text style={styles.timerLabel}>{t('dashboard:worked_time_today', { defaultValue: 'Worked Time Today' })}</Text>
               <Text style={styles.timerDisplay}>
                 {isClockedIn ? liveTimer : '00:00:00'}
               </Text>
@@ -533,10 +490,22 @@ export default function HomeScreen() {
               <>
                 <Ionicons name={isClockedIn ? "stop-circle-outline" : "play-circle-outline"} size={22} color="#FFFFFF" style={{ marginRight: 8 }} />
                 <Text style={styles.clockButtonText}>
-                  {isClockedIn ? 'Clock Out Shift' : 'Clock In Now'}
+                  {isClockedIn ? t('dashboard:clock_out_shift', { defaultValue: 'Clock Out Shift' }) : t('dashboard:clock_in_now', { defaultValue: 'Clock In Now' })}
                 </Text>
               </>
             )}
+          </TouchableOpacity>
+
+          {/* Missed a punch: ask for the attendance to be corrected (date is chosen in the form) */}
+          <TouchableOpacity
+            style={styles.regularizeLink}
+            onPress={() => router.push('/regularize' as any)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="create-outline" size={16} color="#38BDF8" style={{ marginRight: 6 }} />
+            <Text style={styles.regularizeLinkText}>
+              {t('attendance:reg_home_link', { defaultValue: 'Forgot to clock in/out? Regularize attendance' })}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -581,7 +550,7 @@ export default function HomeScreen() {
         {/* DYNAMIC SECTION 1: UPCOMING HOLIDAYS */}
         <View style={styles.sectionHeaderRow}>
           <View>
-            <Text style={[styles.sectionTitle, isDark && { color: '#F8FAFC' }]}>Upcoming Holidays</Text>
+            <Text style={[styles.sectionTitle, isDark && { color: '#F8FAFC' }]}>{t('dashboard:upcoming_holidays', { defaultValue: 'Upcoming Holidays' })}</Text>
             {calendarInfo ? (
               <Text style={{ fontSize: 11, fontWeight: '700', color: isDark ? '#94A3B8' : '#64748B', marginTop: 1 }}>
                 📍 {calendarInfo.name}
@@ -589,7 +558,7 @@ export default function HomeScreen() {
             ) : null}
           </View>
           <TouchableOpacity onPress={() => setIsHolidayModalVisible(true)} activeOpacity={0.7}>
-            <Text style={[styles.sectionActionText, isDark && { color: '#38BDF8' }]}>View Calendar</Text>
+            <Text style={[styles.sectionActionText, isDark && { color: '#38BDF8' }]}>{t('dashboard:view_calendar', { defaultValue: 'View Calendar' })}</Text>
           </TouchableOpacity>
         </View>
 
@@ -609,7 +578,7 @@ export default function HomeScreen() {
           if (upcomingHolidays.length === 0) {
             return (
               <View style={[styles.emptyCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
-                <Text style={[styles.emptyText, isDark && { color: '#94A3B8' }]}>No upcoming holidays scheduled.</Text>
+                <Text style={[styles.emptyText, isDark && { color: '#94A3B8' }]}>{t('dashboard:no_upcoming_holidays_scheduled', { defaultValue: 'No upcoming holidays scheduled.' })}</Text>
               </View>
             );
           }
@@ -617,7 +586,7 @@ export default function HomeScreen() {
           return (
             <View style={styles.listStack}>
               {upcomingHolidays.slice(0, 3).map((holiday) => {
-                const title = holiday.title || holiday.name || 'Holiday';
+                const title = holiday.title || holiday.name || t('dashboard:holiday', { defaultValue: 'Holiday' });
                 const dateDisplay = holiday.dateFormatted || holiday.date;
                 const typeUpper = (holiday.type || '').toUpperCase();
                 const isNational = typeUpper.includes('NATIONAL');
@@ -667,9 +636,9 @@ export default function HomeScreen() {
 
         {/* DYNAMIC SECTION 2: ANNOUNCEMENTS */}
         <View style={[styles.sectionHeaderRow, { marginTop: 24 }]}>
-          <Text style={[styles.sectionTitle, isDark && { color: '#F8FAFC' }]}>Company Announcements</Text>
+          <Text style={[styles.sectionTitle, isDark && { color: '#F8FAFC' }]}>{t('dashboard:company_announcements', { defaultValue: 'Company Announcements' })}</Text>
           <TouchableOpacity onPress={() => setIsAnnouncementModalVisible(true)} activeOpacity={0.7}>
-            <Text style={[styles.sectionActionText, isDark && { color: '#38BDF8' }]}>View All</Text>
+            <Text style={[styles.sectionActionText, isDark && { color: '#38BDF8' }]}>{t('dashboard:view_all', { defaultValue: 'View All' })}</Text>
           </TouchableOpacity>
         </View>
 
@@ -679,7 +648,7 @@ export default function HomeScreen() {
           </View>
         ) : announcements.length === 0 ? (
           <View style={[styles.emptyCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
-            <Text style={[styles.emptyText, isDark && { color: '#94A3B8' }]}>No active announcements posted.</Text>
+            <Text style={[styles.emptyText, isDark && { color: '#94A3B8' }]}>{t('dashboard:no_active_announcements_posted', { defaultValue: 'No active announcements posted.' })}</Text>
           </View>
         ) : (
           <View style={styles.listStack}>
@@ -707,7 +676,7 @@ export default function HomeScreen() {
                           ? (isDark ? { color: '#818CF8' } : { color: '#4F46E5' }) 
                           : (isDark ? { color: '#FBBF24' } : { color: '#D97706' })
                       ]}>
-                        {(item.priority || 'General').toUpperCase()}
+                        {(item.priority ? String(item.priority) : t('dashboard:priority_general', { defaultValue: 'General' })).toUpperCase()}
                       </Text>
                     </View>
                     <Text style={[styles.datePostedText, isDark && { color: '#64748B' }]}>{item.datePosted}</Text>
@@ -913,6 +882,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 15,
     fontWeight: '800',
+  },
+  regularizeLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 14,
+    paddingVertical: 6,
+  },
+  regularizeLinkText: {
+    color: '#38BDF8',
+    fontSize: 13,
+    fontWeight: '700',
   },
   telemetryStrip: {
     flexDirection: 'row',

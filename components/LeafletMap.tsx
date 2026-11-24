@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useEffect } from 'react';
 import { View, Platform, StyleProp, ViewStyle } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
+import { WORLD_REGION, zoomForLatitudeDelta } from '@/constants/map';
 
 export interface MarkerData {
   latitude: number;
@@ -39,7 +40,7 @@ export interface LeafletMapProps {
 }
 
 export const LeafletMap: React.FC<LeafletMapProps> = ({
-  initialRegion = { latitude: 28.6692, longitude: 77.4538, latitudeDelta: 0.1, longitudeDelta: 0.1 },
+  initialRegion = WORLD_REGION,
   markers = [],
   circles = [],
   polylines = [],
@@ -51,8 +52,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const htmlDependencies = Platform.OS === 'web' ? [initialRegion, markers, circles, polylines] : [];
 
   const htmlContent = useMemo(() => {
-    const zoom = initialRegion.latitudeDelta && initialRegion.latitudeDelta < 0.05 ? 15 : 13;
-    const initialData = JSON.stringify({ initialRegion, markers, circles, polylines });
+    const zoom = zoomForLatitudeDelta(initialRegion.latitudeDelta);
+    const initialData = JSON.stringify({ initialRegion, zoom, markers, circles, polylines });
     
     return `
       <!DOCTYPE html>
@@ -83,8 +84,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
               layerGroup.clearLayers();
 
               if (data.initialRegion) {
-                var z = data.initialRegion.latitudeDelta && data.initialRegion.latitudeDelta < 0.05 ? 15 : 13;
-                map.flyTo([data.initialRegion.latitude, data.initialRegion.longitude], z);
+                map.flyTo([data.initialRegion.latitude, data.initialRegion.longitude], data.zoom);
               }
 
               if (data.polylines) {
@@ -149,6 +149,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
     if (Platform.OS !== 'web' && webViewRef.current) {
       const dataStr = JSON.stringify({
         initialRegion,
+        zoom: zoomForLatitudeDelta(initialRegion.latitudeDelta),
         markers,
         circles,
         polylines

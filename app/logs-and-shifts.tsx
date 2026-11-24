@@ -7,6 +7,11 @@ import api from '@/services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getDateLocale } from '@/src/i18n/dateLocale';
+import { Ionicons } from '@expo/vector-icons';
+import { istDateString } from '@/utils/activityTime';
+import { validateRegularizeDate } from '@/utils/regularizationRules';
 
 interface SelectedPeriod {
   label: string;
@@ -31,6 +36,7 @@ export default function LogsAndShiftsScreen() {
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['attendance', 'common']);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -43,9 +49,9 @@ export default function LogsAndShiftsScreen() {
   start30.setDate(start30.getDate() - 30);
 
   const defaultOption: SelectedPeriod = {
-    label: 'Last 30 Days',
+    label: t('attendance:last_30_days', { defaultValue: 'Last 30 Days' }),
     key: 'LAST_30',
-    subtitle: `(${start30.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} - ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})`
+    subtitle: `(${start30.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short' })} - ${now.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short' })})`
   };
 
   const [selectedOption, setSelectedOption] = useState<SelectedPeriod>(defaultOption);
@@ -59,7 +65,10 @@ export default function LogsAndShiftsScreen() {
     if (!user?.id && !user?.empCode) return;
     try {
       setLoading(true);
-      const res = await api.get('/attendance');
+      const targetUserId = user?.empCode || user?.employeeCode || user?.id;
+      const res = await api.get('/attendance', {
+        params: { userId: targetUserId }
+      });
       const recordsMap: Record<string, any> = {};
       
       if (res.data && Array.isArray(res.data)) {
@@ -119,7 +128,7 @@ export default function LogsAndShiftsScreen() {
     const dateISO = `${year}-${month}-${day}`;
 
     const dayOfWeek = d.getDay();
-    const dateStrFormatted = d.toLocaleDateString('en-GB', {
+    const dateStrFormatted = d.toLocaleDateString(getDateLocale(), {
       weekday: 'long',
       day: 'numeric',
       month: 'short',
@@ -167,12 +176,12 @@ export default function LogsAndShiftsScreen() {
 
       const hasMissingOut = !rec.checkOut || rec.checkOut === 'MISSING';
       const statusPill = hasMissingOut ? 'SWIPE(S) MISSING' : null;
-      const alertBanner = (isLate || hasMissingOut) && !isToday ? '1 Penalties has been recorded' : null;
+      const alertBanner = (isLate || hasMissingOut) && !isToday ? t('attendance:penalty_recorded', { defaultValue: '1 Penalties has been recorded' }) : null;
 
       list.push({
         id: dateISO,
         dateStr: dateStrFormatted,
-        mode: 'Remote Clock in',
+        mode: t('attendance:remote_clock_in', { defaultValue: 'Remote Clock in' }),
         statusPill,
         shift: '09:00 AM - 05:00 PM • (9AM - 5PM)',
         lateBadge,
@@ -203,7 +212,7 @@ export default function LogsAndShiftsScreen() {
     const monthName = `${MONTH_NAMES[monthIdx]} ${year}`;
     const firstDay = new Date(year, monthIdx, 1);
     const lastDay = new Date(year, monthIdx + 1, 0);
-    const subtitle = `(${firstDay.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} - ${lastDay.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })})`;
+    const subtitle = `(${firstDay.toLocaleDateString(getDateLocale(), { day: '2-digit', month: 'short' })} - ${lastDay.toLocaleDateString(getDateLocale(), { day: '2-digit', month: 'short' })})`;
 
     setSelectedOption({
       label: monthName,
@@ -216,9 +225,12 @@ export default function LogsAndShiftsScreen() {
   };
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-surface'}`} style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
+    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-surface'}`}>
       {/* Header with Calendar SVG Trigger */}
-      <View className={`flex-row items-center justify-between px-5 py-4 border-b z-10 ${isDark ? 'bg-[#1E293B] border-slate-700' : 'bg-background border-border'}`}>
+      <View 
+        className={`flex-row items-center justify-between px-5 border-b z-10 ${isDark ? 'bg-[#1E293B] border-slate-700' : 'bg-background border-border'}`}
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <View className="flex-row items-center">
           <TouchableOpacity 
             className={`w-10 h-10 rounded-full items-center justify-center border mr-3 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`}
@@ -245,13 +257,24 @@ export default function LogsAndShiftsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Calendar SVG Button to Trigger Month & Year Selection */}
-        <TouchableOpacity 
-          className={`w-11 h-11 rounded-2xl items-center justify-center border shadow-sm active:opacity-80 ${isDark ? 'bg-blue-950/60 border-blue-800' : 'bg-blue-50 border-blue-100'}`}
-          onPress={() => setIsMonthPickerVisible(true)}
-        >
-          <CalendarSvgIcon size={24} color={isDark ? '#38BDF8' : '#0052CC'} />
-        </TouchableOpacity>
+        <View className="flex-row items-center gap-2">
+          {/* Attendance regularization requests the employee has sent */}
+          <TouchableOpacity
+            className={`w-11 h-11 rounded-2xl items-center justify-center border shadow-sm active:opacity-80 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`}
+            onPress={() => router.push('/regularization-requests' as any)}
+            accessibilityLabel={t('attendance:reg_my_requests', { defaultValue: 'My requests' })}
+          >
+            <Ionicons name="document-text-outline" size={22} color={isDark ? '#38BDF8' : '#0052CC'} />
+          </TouchableOpacity>
+
+          {/* Calendar SVG Button to Trigger Month & Year Selection */}
+          <TouchableOpacity 
+            className={`w-11 h-11 rounded-2xl items-center justify-center border shadow-sm active:opacity-80 ${isDark ? 'bg-blue-950/60 border-blue-800' : 'bg-blue-50 border-blue-100'}`}
+            onPress={() => setIsMonthPickerVisible(true)}
+          >
+            <CalendarSvgIcon size={24} color={isDark ? '#38BDF8' : '#0052CC'} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView 
@@ -283,13 +306,13 @@ export default function LogsAndShiftsScreen() {
 
                   {item.statusPill === 'SWIPE(S) MISSING' && (
                     <View className={`px-2.5 py-0.5 rounded-full border ${isDark ? 'bg-rose-950/60 border-rose-800' : 'bg-rose-50 border-rose-100'}`}>
-                      <Text className={`text-[10px] font-bold ${isDark ? 'text-rose-400' : 'color-rose-500'}`}>SWIPE(S) MISSING</Text>
+                      <Text className={`text-[10px] font-bold ${isDark ? 'text-rose-400' : 'color-rose-500'}`}>{t('attendance:swipe_s_missing', { defaultValue: 'SWIPE(S) MISSING' })}</Text>
                     </View>
                   )}
 
                   {item.statusPill === 'Week Off' && (
                     <View className={`px-2.5 py-0.5 rounded-full border ${isDark ? 'bg-blue-950/60 border-blue-800' : 'bg-blue-50 border-blue-100'}`}>
-                      <Text className={`text-[10px] font-bold ${isDark ? 'text-sky-400' : 'color-primary'}`}>Week Off</Text>
+                      <Text className={`text-[10px] font-bold ${isDark ? 'text-sky-400' : 'color-primary'}`}>{t('attendance:week_off', { defaultValue: 'Week Off' })}</Text>
                     </View>
                   )}
                 </View>
@@ -301,8 +324,20 @@ export default function LogsAndShiftsScreen() {
                       {item.shift}
                     </Text>
                     <Text className="text-xs font-bold text-rose-500 mt-1">
-                      No entries logged
+                      {t('attendance:no_entries_logged', { defaultValue: 'No entries logged' })}
                     </Text>
+                    {/* A past day without attendance can be regularized, with the day already filled in. */}
+                    {!validateRegularizeDate(item.id, istDateString(Date.now())) && (
+                      <TouchableOpacity
+                        className={`mt-3 py-2.5 rounded-xl border items-center ${isDark ? 'border-sky-400' : 'border-primary'}`}
+                        activeOpacity={0.8}
+                        onPress={() => router.push({ pathname: '/regularize', params: { date: item.id } } as any)}
+                      >
+                        <Text className={`text-xs font-extrabold ${isDark ? 'text-sky-400' : 'text-primary'}`}>
+                          {t('attendance:reg_title', { defaultValue: 'Regularize attendance' })}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 ) : (
                   <View className={`pt-2 border-t mt-2 ${isDark ? 'border-slate-700' : 'border-border'}`}>
@@ -379,7 +414,7 @@ export default function LogsAndShiftsScreen() {
             <View className={`flex-row justify-between items-center pb-4 border-b mb-4 ${isDark ? 'border-slate-700' : 'border-border'}`}>
               <View className="flex-row items-center gap-2">
                 <CalendarSvgIcon size={22} color={isDark ? '#38BDF8' : '#0052CC'} />
-                <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-text-main'}`}>Select Month & Year</Text>
+                <Text className={`text-lg font-bold ${isDark ? 'text-white' : 'text-text-main'}`}>{t('attendance:select_month_and_year', { defaultValue: 'Select Month & Year' })}</Text>
               </View>
               <TouchableOpacity 
                 className={`w-8 h-8 rounded-full items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`}
@@ -405,7 +440,7 @@ export default function LogsAndShiftsScreen() {
                 <Text className="text-base">🕒</Text>
                 <View>
                   <Text className={`text-sm font-bold ${selectedOption.key === 'LAST_30' ? (isDark ? 'text-sky-400' : 'text-primary') : (isDark ? 'text-white' : 'text-text-main')}`}>
-                    Last 30 Days (Default)
+                    {t('attendance:last_30_days_default', { defaultValue: 'Last 30 Days (Default)' })}
                   </Text>
                   <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{defaultOption.subtitle}</Text>
                 </View>

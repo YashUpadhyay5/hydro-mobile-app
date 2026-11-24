@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { Platform, Alert, NativeModules, Linking, Vibration } from "react-native";
+import { Platform, Alert, NativeModules, Linking, Vibration, AppState, AppStateStatus } from "react-native";
 const { LocationTracking } = NativeModules;
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import * as Device from 'expo-device';
-import { USER_CONFIG } from "@/constants/UserRoles";
 import axios from "axios";
 import api from "@/services/api";
 import { API_BASE_URL } from "@/constants/API";
@@ -14,9 +13,14 @@ import { BACKGROUND_LOCATION_TASK } from "../services/BackgroundLocationTask";
 import * as Notifications from "expo-notifications";
 import AttendanceServiceBridge from "@/services/AttendanceServiceBridge";
 import { registerForPushNotificationsAsync } from "@/services/NotificationService";
+import socketService from "@/services/socketService";
 import { logDebug, checkStartupBackendUrl } from "@/services/DebugLogger";
 import { fetchAppSettings, getCachedAppSettings, parseIntervalMs, DEFAULT_APP_SETTINGS, AppSettings, getShiftDurationSeconds } from "@/services/settingsService";
+import i18n from "@/src/i18n";
 import { requestAppStartupPermissions, requestAllTimeLocationPermission } from "@/services/DeviceHealthService";
+import { reportAttendanceForReminders } from "@/services/AttendanceReminderService";
+import { formatDateISO } from '@/utils/date';
+import { syncOfflineData } from "@/services/syncService";
 
 const getDistanceFromLatLonInMeters = (lat1: number, lon1: number, lat2: number, lon2: number) => {
   const R = 6371000;
@@ -26,40 +30,78 @@ const getDistanceFromLatLonInMeters = (lat1: number, lon1: number, lat2: number,
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 };
 
-const formatDateISO = (d: Date) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+const GEOFENCE_CACHE_KEY = '@hrms_geofences_v1';
 
-const checkGeofenceBoundaries = async (lat: number, lon: number) => {
+/** Office geofences from the backend, falling back to the last successful fetch when offline. */
+const loadGeofences = async (): Promise<any[]> => {
   try {
     const geoRes = await api.get('/geofence');
-    const geofences = Array.isArray(geoRes.data) ? geoRes.data : [geoRes.data];
-    
-    if (geofences.length > 0) {
-      let minDistance = Infinity;
-      let matchingRadius = 100.0;
-      
-      for (const gf of geofences) {
-        const dist = getDistanceFromLatLonInMeters(lat, lon, Number(gf.latitude), Number(gf.longitude));
-        if (dist <= Number(gf.radius)) {
-          return { inside: true, minDistance: dist, maxRadius: Number(gf.radius) };
-        }
-        if (dist < minDistance) {
-          minDistance = dist;
-          matchingRadius = Number(gf.radius);
-        }
-      }
-      return { inside: false, minDistance, maxRadius: matchingRadius };
-    }
+    const list = (Array.isArray(geoRes.data) ? geoRes.data : [geoRes.data]).filter(Boolean);
+    AsyncStorage.setItem(GEOFENCE_CACHE_KEY, JSON.stringify(list)).catch(() => {});
+    return list;
   } catch (err) {
-    console.warn("Could not fetch geofence settings, using default:", err);
+    console.warn("Could not fetch geofence settings, trying the cached copy:", err);
+    try {
+      const cached = await AsyncStorage.getItem(GEOFENCE_CACHE_KEY);
+      const list = cached ? JSON.parse(cached) : [];
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
   }
-  
-  const defaultDist = getDistanceFromLatLonInMeters(lat, lon, 28.5099, 77.3807);
-  return { inside: defaultDist <= 100.0, minDistance: defaultDist, maxRadius: 100.0 };
+};
+
+/**
+ * `available` is false when no geofence is known at all (never fetched, or the backend has none).
+ * Callers must decide what that means for them: there is no built-in office to measure against.
+ */
+const checkGeofenceBoundaries = async (lat: number, lon: number) => {
+  const geofences = await loadGeofences();
+  if (geofences.length === 0) {
+    return { inside: false, available: false, minDistance: Infinity, maxRadius: 0 };
+  }
+
+  let minDistance = Infinity;
+  let matchingRadius = 0;
+
+  for (const gf of geofences) {
+    const dist = getDistanceFromLatLonInMeters(lat, lon, Number(gf.latitude), Number(gf.longitude));
+    if (dist <= Number(gf.radius)) {
+      return { inside: true, available: true, minDistance: dist, maxRadius: Number(gf.radius) };
+    }
+    if (dist < minDistance) {
+      minDistance = dist;
+      matchingRadius = Number(gf.radius);
+    }
+  }
+  return { inside: false, available: true, minDistance, maxRadius: matchingRadius };
+};
+
+const geofenceUnavailableMsg = () =>
+  i18n.t('attendance:geofence_unavailable', { defaultValue: 'The office geofence could not be loaded, so your location can\'t be verified. Check your connection and try again, or switch to Field Duty on the home screen.' });
+
+const enqueueOfflineAttendance = async (record: any) => {
+  try {
+    const rawQueue = await AsyncStorage.getItem('offlineQueue');
+    const queue = rawQueue ? JSON.parse(rawQueue) : [];
+    const isDuplicate = queue.some((item: any) =>
+      item.userId === record.userId &&
+      item.date === record.date &&
+      item.checkIn === record.checkIn &&
+      item.checkOut === record.checkOut
+    );
+    if (!isDuplicate) {
+      queue.push(record);
+      await AsyncStorage.setItem('offlineQueue', JSON.stringify(queue));
+      logDebug('ATTENDANCE', 'OFFLINE_QUEUE_ENQUEUE', 'SUCCESS', record.userId, `Type: ${record.checkOut ? 'Clock-Out' : 'Clock-In'} queued offline`);
+      console.log(`[useAttendance] Queued ${record.checkOut ? 'Clock-Out' : 'Clock-In'} offline into AsyncStorage.`);
+    }
+    if (Platform.OS === 'android' && CellularTracker && CellularTracker.recordOfflineClockOut && record.checkOut) {
+      CellularTracker.recordOfflineClockOut(JSON.stringify(record));
+    }
+  } catch (e: any) {
+    console.warn('[useAttendance] Failed to enqueue offline attendance:', e?.message);
+  }
 };
 
 export default function useAttendance(targetUserId?: string) {
@@ -109,14 +151,51 @@ export default function useAttendance(targetUserId?: string) {
   const [primaryWorkMode, setPrimaryWorkMode] = useState('office');
   const [appSettings, setAppSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const appSettingsRef = useRef<AppSettings>(DEFAULT_APP_SETTINGS);
+  // Set when the native tracker refused to start because location permission was missing,
+  // so it can be retried once the startup permission prompt is answered.
+  const nativeTrackerAwaitingPermissionRef = useRef<boolean>(false);
+  const [nativeTrackerRetryKey, setNativeTrackerRetryKey] = useState(0);
+  // `status` starts as "Not checked in" on every mount (app launch, opening Profile) until the saved
+  // attendance state is read. Tracking must not be stopped on that placeholder value, or every mount
+  // clocks the native tracker out and pings are lost until it restarts.
+  const [isStateRestored, setIsStateRestored] = useState(false);
 
 
   useEffect(() => {
     loadData();
+
+    // 1. Reconcile on App Foreground (user unlocks phone or re-opens app)
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        console.log('[useAttendance] App resumed in active foreground. Reconciling attendance status with server...');
+        loadData();
+      }
+    });
+
+    // 2. Real-time server-side clock-out listener via WebSocket
+    const activeUid = targetUserId || user?.id;
+    let socket: any = null;
+    if (activeUid) {
+      socket = socketService.getSocket();
+      const onAttendanceEvent = (payload: any) => {
+        if (!payload || payload.userId === activeUid || payload.employeeId === activeUid) {
+          console.log('[useAttendance Socket] Received real-time attendance update from server:', payload);
+          loadData();
+        }
+      };
+      if (socket) {
+        socket.on('attendance_status_changed', onAttendanceEvent);
+        socket.on('attendance:clock_out', onAttendanceEvent);
+      }
+    }
+
     const initializePermissions = async () => {
       if (Platform.OS !== 'web') {
         try {
-          await requestAppStartupPermissions();
+          const permissions = await requestAppStartupPermissions();
+          if (permissions.foregroundLocation && nativeTrackerAwaitingPermissionRef.current) {
+            setNativeTrackerRetryKey((key) => key + 1);
+          }
         } catch (err) {
           console.warn("[useAttendance] Sequential startup permissions warning:", err);
         }
@@ -124,7 +203,11 @@ export default function useAttendance(targetUserId?: string) {
     };
     initializePermissions();
     return () => { 
-      // Removed stopWatchingLocation() so tracking persists even if app unmounts
+      appStateSubscription.remove();
+      if (socket) {
+        socket.off('attendance_status_changed');
+        socket.off('attendance:clock_out');
+      }
     };
   }, [targetUserId, user?.id]);
 
@@ -161,9 +244,9 @@ export default function useAttendance(targetUserId?: string) {
                 console.warn("[useAttendance Hook] Failed to trigger alarm notification:", notifErr.message);
               }
               Alert.alert(
-                "⏰ Shift Completed",
-                `Your shift (${appSettingsRef.current.punch_in_start} - ${appSettingsRef.current.punch_out_time}) is complete. Please Clock Out immediately.`,
-                [{ text: "Clock Out Now", onPress: () => clockOut() }]
+                i18n.t('attendance:shift_completed_title', { defaultValue: '⏰ Shift Completed' }),
+                i18n.t('attendance:shift_completed_msg', { defaultValue: 'Your shift ({{start}} - {{end}}) is complete. Please Clock Out immediately.', start: appSettingsRef.current.punch_in_start, end: appSettingsRef.current.punch_out_time }),
+                [{ text: i18n.t('attendance:clock_out_now', { defaultValue: 'Clock Out Now' }), onPress: () => clockOut() }]
               );
             }
           } else {
@@ -203,8 +286,8 @@ export default function useAttendance(targetUserId?: string) {
               try {
                 await Notifications.scheduleNotificationAsync({
                   content: {
-                    title: "HRMS Reminder",
-                    body: "Your shift is almost complete. Please remember to clock out.",
+                    title: i18n.t('attendance:reminder_title', { defaultValue: 'HRMS Reminder' }),
+                    body: i18n.t('attendance:shift_almost_complete', { defaultValue: 'Your shift is almost complete. Please remember to clock out.' }),
                   },
                   trigger: null,
                 });
@@ -226,11 +309,11 @@ export default function useAttendance(targetUserId?: string) {
         }
       }, 1000);
       startWatchingLocation();
-    } else {
+    } else if (isStateRestored) {
       stopWatchingLocation();
     }
     return () => { clearInterval(interval); };
-  }, [status, checkInTimestamp, attendanceHistory, checkInTime]);
+  }, [status, checkInTimestamp, attendanceHistory, checkInTime, isStateRestored]);
 
   const refreshData = async () => {
     await loadData();
@@ -247,15 +330,16 @@ export default function useAttendance(targetUserId?: string) {
       if (isNativeActive) {
         try {
           CellularTracker.requestBatteryOptimizationExemption();
-          CellularTracker.startTrackingService(
-            user?.id || "", 
+          const started = CellularTracker.startTrackingService(
+            user?.id || "",
             API_BASE_URL, 
             user?.token,
             appSettings.location_provider || appSettingsRef.current.location_provider || "GPS Preferred",
             appSettings.gps_ratio_count !== undefined ? appSettings.gps_ratio_count : (appSettingsRef.current.gps_ratio_count || 1),
-            appSettings.cellular_ratio_count !== undefined ? appSettings.cellular_ratio_count : (appSettingsRef.current.cellular_ratio_count || 6),
+            appSettings.cellular_ratio_count !== undefined ? appSettings.cellular_ratio_count : (appSettingsRef.current.cellular_ratio_count || 2),
             appSettings.location_update_interval || appSettingsRef.current.location_update_interval || "30 Seconds"
           );
+          nativeTrackerAwaitingPermissionRef.current = !started;
           console.log("[useAttendance] Native Android CellularTracker service active. Suppressing JS duplicate poller.");
         } catch (cErr) {
           console.warn("[useAttendance] CellularTracker start warning:", cErr);
@@ -307,7 +391,7 @@ export default function useAttendance(targetUserId?: string) {
       if (consoleLogInterval) clearInterval(consoleLogInterval);
       if (settingsInterval) clearInterval(settingsInterval);
     };
-  }, [status, user?.id, appSettings.location_update_interval, appSettings.location_provider, appSettings.auto_sync_interval_seconds]);
+  }, [status, user?.id, appSettings.location_update_interval, appSettings.location_provider, appSettings.auto_sync_interval_seconds, nativeTrackerRetryKey]);
 
   useEffect(() => {
     let countdownInterval: any;
@@ -458,6 +542,9 @@ export default function useAttendance(targetUserId?: string) {
       let reason: string | undefined = undefined;
       let accuracy: number | null = null;
       let isMockLoc = false;
+      let fixTimestamp: number | null = null;
+      let captureSource: string | null = null;
+      let locationSource: string | null = null;
 
       if (Platform.OS !== 'web') {
         const { status: permStatus } = await Location.getForegroundPermissionsAsync();
@@ -470,12 +557,12 @@ export default function useAttendance(targetUserId?: string) {
           const gpsRatio = Math.max(1, Number(appSettings.gps_ratio_count || appSettingsRef.current.gps_ratio_count || 1));
           const cellularRatio = Math.max(1, Number(appSettings.cellular_ratio_count || appSettingsRef.current.cellular_ratio_count || 2));
 
-          if (providerSetting === 'GPS Only') {
+          if (providerSetting === 'GPS Only' || providerSetting === 'GPS Preferred') {
             trackingMethod = 'GPS';
           } else if (providerSetting === 'Cellular Only') {
             trackingMethod = 'CELLULAR';
           } else {
-            // Mode: 'GPS + Cellular' or 'GPS Preferred' -> Custom Sequence Ratio (e.g. 1 GPS : 2 Cellular)
+            // Mode: 'GPS + Cellular' -> Custom Sequence Ratio (e.g. 1 GPS : 2 Cellular)
             const cycleLength = gpsRatio + cellularRatio;
             const stepInCycle = pingRatioCounter.current % cycleLength;
 
@@ -493,13 +580,18 @@ export default function useAttendance(targetUserId?: string) {
               let loc: any;
               try {
                 loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+                captureSource = 'JS_POLLER_HIGH';
+                locationSource = 'GPS';
               } catch (highErr) {
                 console.warn("[useAttendance Hook] High accuracy failed, retrying with Balanced accuracy:", highErr);
                 loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                captureSource = 'JS_POLLER_BALANCED';
+                locationSource = 'NETWORK';
               }
               lat = loc.coords.latitude;
               lon = loc.coords.longitude;
               accuracy = loc.coords.accuracy;
+              fixTimestamp = loc.timestamp;
               isMockLoc = loc.mocked || loc.coords?.isMocked || false;
               if (isMockLoc) {
                 reason = 'MOCK_LOCATION_DETECTED';
@@ -524,13 +616,19 @@ export default function useAttendance(targetUserId?: string) {
               let loc: any;
               try {
                 loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                captureSource = 'JS_POLLER_BALANCED';
+                locationSource = 'NETWORK';
               } catch (balErr) {
-                loc = await Location.getLastKnownPositionAsync();
+                // Never accept an arbitrarily old or coarse cached fix as the current position.
+                loc = await Location.getLastKnownPositionAsync({ maxAge: 120000, requiredAccuracy: 150 });
+                captureSource = 'JS_POLLER_LAST_KNOWN';
+                locationSource = 'LAST_KNOWN';
               }
               if (loc && loc.coords) {
                 lat = loc.coords.latitude;
                 lon = loc.coords.longitude;
                 accuracy = loc.coords.accuracy;
+                fixTimestamp = loc.timestamp;
                 isMockLoc = loc.mocked || loc.coords?.isMocked || false;
                 if (lat !== null && lon !== null) {
                   lastKnownCoords.current = { latitude: lat, longitude: lon };
@@ -566,8 +664,8 @@ export default function useAttendance(targetUserId?: string) {
           if (locationAlertCountRef.current < 3) {
             Notifications.scheduleNotificationAsync({
               content: {
-                title: '⚠️ Location Services (GPS) Disabled',
-                body: 'Your GPS is turned OFF. Shift attendance tracking is halted. Please enable GPS immediately to record attendance.',
+                title: i18n.t('attendance:gps_disabled_notif_title', { defaultValue: '⚠️ Location Services (GPS) Disabled' }),
+                body: i18n.t('attendance:gps_disabled_notif_body', { defaultValue: 'Your GPS is turned OFF. Shift attendance tracking is halted. Please enable GPS immediately to record attendance.' }),
               },
               trigger: null,
             });
@@ -590,10 +688,13 @@ export default function useAttendance(targetUserId?: string) {
         latitude: lat,
         longitude: lon,
         timestamp: Date.now(),
+        fixTimestamp,
+        captureSource,
         date: formatDateISO(new Date()),
-        locationEnabled: locationEnabled && lat !== null && lon !== null,
+        // Device location-services state, not whether this ping produced coordinates.
+        locationEnabled,
         trackingMethod,
-        locationSource: trackingMethod,
+        locationSource: lat !== null && lon !== null && locationSource ? locationSource : trackingMethod,
         accuracy,
         batteryLevel: Platform.OS === 'android' && CellularTracker ? CellularTracker.getBatteryLevel() : 1.0,
         batteryTemp: Platform.OS === 'android' && CellularTracker ? CellularTracker.getBatteryTemperature() : null,
@@ -645,9 +746,13 @@ export default function useAttendance(targetUserId?: string) {
         (user?.designation || '').toUpperCase() === 'FIELD' || 
         (userDesignation || '').toUpperCase() === 'FIELD';
 
-      if (!isFieldDutyForFootprint && userDesignation === 'OFFICE' && workMode === 'office' && lat !== null && lon !== null) {
+      // A coarse fix (hundreds of metres) must not start or stop the auto clock-out geofence timer.
+      const isReliableAccuracy = accuracy !== null && accuracy <= 150;
+      if (!isFieldDutyForFootprint && userDesignation === 'OFFICE' && workMode === 'office' && lat !== null && lon !== null && isReliableAccuracy) {
         const gfCheck = await checkGeofenceBoundaries(lat, lon);
-        if (!gfCheck.inside) {
+        if (!gfCheck.available) {
+          // No geofence to measure against: leave the auto clock-out timer as it is rather than guess.
+        } else if (!gfCheck.inside) {
           // User is outside office geofence!
           isOutsideGeofenceRef.current = true;
           let outTimeStr = await AsyncStorage.getItem(`outOfGeofenceTime_${user.id}`);
@@ -675,11 +780,11 @@ export default function useAttendance(targetUserId?: string) {
               await clockOut();
               
               if (Platform.OS === 'web') {
-                window.alert("Auto Clock-Out: You have been outside the office geofence for more than 8 hours and have been automatically clocked out.");
+                window.alert(`${i18n.t('attendance:auto_clock_out', { defaultValue: 'Auto Clock-Out' })}: ${i18n.t('attendance:auto_clock_out_msg', { defaultValue: 'You have been outside the office geofence for more than 8 hours and have been automatically clocked out.' })}`);
               } else {
                 Alert.alert(
-                  "Auto Clock-Out",
-                  "You have been outside the office geofence for more than 8 hours and have been automatically clocked out."
+                  i18n.t('attendance:auto_clock_out', { defaultValue: 'Auto Clock-Out' }),
+                  i18n.t('attendance:auto_clock_out_msg', { defaultValue: 'You have been outside the office geofence for more than 8 hours and have been automatically clocked out.' })
                 );
               }
             }
@@ -732,8 +837,8 @@ export default function useAttendance(targetUserId?: string) {
           pausesUpdatesAutomatically: false,
           showsBackgroundLocationIndicator: true,
           foregroundService: {
-            notificationTitle: "HRMS Shift Active",
-            notificationBody: "Location tracking enabled for shift validation",
+            notificationTitle: i18n.t('attendance:shift_active_title', { defaultValue: 'HRMS Shift Active' }),
+            notificationBody: i18n.t('attendance:shift_active_body', { defaultValue: 'Location tracking enabled for shift validation' }),
             notificationColor: "#2563eb",
             killServiceOnDestroy: false
           }
@@ -742,24 +847,6 @@ export default function useAttendance(targetUserId?: string) {
       } catch (bgErr) {
         console.warn("[useAttendance Hook] startLocationUpdatesAsync failed:", bgErr);
       }
-    }
-    
-    try {
-      locationSubscription.current = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.High, timeInterval: intervalMs, distanceInterval: 1 },
-        async (loc) => {
-          const { latitude, longitude } = loc.coords;
-          const userRole = user?.role || USER_CONFIG.role;
-          if (userRole === 'FIELD') {
-            const site = USER_CONFIG.sites.find(s => getDistanceFromLatLonInMeters(latitude, longitude, s.lat, s.lon) <= s.radius);
-            if (site) {
-               console.log(`Tracking: Operator at ${site.name}`);
-            }
-          }
-        }
-      );
-    } catch (err) {
-      console.warn("[useAttendance Hook] watchPositionAsync failed (Location services might be turned off):", err);
     }
   };
 
@@ -857,7 +944,8 @@ export default function useAttendance(targetUserId?: string) {
 
     // 1. Fetch remote history in background (non-blocking)
     try {
-      api.get('/attendance').then(async res => {
+      const activeUserIdentifier = activeUid || user?.empCode || user?.employeeCode || user?.id;
+      api.get('/attendance', { params: { userId: activeUserIdentifier } }).then(async res => {
         if (res.data && Array.isArray(res.data)) {
           const empCode = user?.empCode || user?.employeeCode;
           const uId = activeUid || user?.id;
@@ -873,25 +961,75 @@ export default function useAttendance(targetUserId?: string) {
             );
           });
 
-          const dataset = userRecords.length > 0 ? userRecords : res.data;
-          setAttendanceHistory(dataset);
-          await AsyncStorage.setItem(`attendanceHistory_${activeUid}`, JSON.stringify(dataset));
+          if (userRecords.length === 0 && res.data.length > 0) {
+            console.warn("[Attendance] Server returned records but none matched the current user; ignoring unfiltered response.");
+          } else {
+            const dataset = userRecords;
+            setAttendanceHistory(dataset);
+            await AsyncStorage.setItem(`attendanceHistory_${activeUid}`, JSON.stringify(dataset));
 
-          // Sync workMode from the live open session (server is source of truth)
-          const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
-          const openSession = dataset.find(
-            (s: any) => s.date === today && (s.checkOut === null || s.checkOut === undefined || s.checkOut === '')
-          );
-          if (openSession && openSession.workMode) {
-            const serverMode = openSession.workMode;
-            setWorkMode(serverMode);
-            await AsyncStorage.setItem(`workMode_${activeUid}`, serverMode);
-            console.log(`[workMode Sync] Restored workMode='${serverMode}' from active session (id=${openSession.id}).`);
+            // Sync workMode & attendance status from the server (server is source of truth)
+            const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+            const openSession = dataset.find(
+              (s: any) => s.date === today && (s.checkOut === null || s.checkOut === undefined || s.checkOut === '')
+            );
+            if (openSession) {
+              if (openSession.workMode) {
+                const serverMode = openSession.workMode;
+                setWorkMode(serverMode);
+                await AsyncStorage.setItem(`workMode_${activeUid}`, serverMode);
+                console.log(`[workMode Sync] Restored workMode='${serverMode}' from active session (id=${openSession.id}).`);
+              }
+            } else {
+              // Server has NO open session for today (server / admin / watchdog marked employee as Clocked Out)
+              const rawOfflineQueue = await AsyncStorage.getItem('offlineQueue');
+              const hasPendingOfflineClockIn = rawOfflineQueue 
+                ? JSON.parse(rawOfflineQueue).some((item: any) => (item.userId === activeUid || item.employeeId === activeUid) && !item.checkOut) 
+                : false;
+
+              if (!hasPendingOfflineClockIn) {
+                const savedStateStr = await AsyncStorage.getItem(`attendanceState_${activeUid}`);
+                const savedState = savedStateStr ? JSON.parse(savedStateStr) : null;
+                const wasCheckedInLocally = savedState?.status === "Checked In" || status === "Checked In";
+
+                if (wasCheckedInLocally) {
+                  const latestRecord = dataset[0];
+                  console.log(`[Server Reconcile] Server marked employee ${activeUid} as Clocked Out. Reconciling local state...`);
+                  logDebug("ATTENDANCE", "SERVER_CLOCK_OUT_RECONCILE", "SUCCESS", activeUid, `CheckOut: ${latestRecord?.checkOut || 'None'}`);
+
+                  setStatus("Not checked in");
+                  setCheckInTime("");
+                  setCheckOutTime(latestRecord?.checkOut || "");
+                  setWorkingHours(latestRecord?.workingHours || "");
+                  setCheckInTimestamp(null);
+                  setLiveTimer("00:00:00");
+                  setAccumulatedSeconds(0);
+                  accumulatedSecondsRef.current = 0;
+                  isOutsideGeofenceRef.current = false;
+
+                  await AsyncStorage.removeItem(`attendanceState_${activeUid}`);
+                  await AsyncStorage.removeItem(`outOfGeofenceTime_${activeUid}`);
+                  await AsyncStorage.removeItem(`totalPausedSeconds_${activeUid}`);
+
+                  // Stop background location tracking immediately
+                  await stopWatchingLocation();
+                  if (Platform.OS === 'android') {
+                    if (CellularTracker && CellularTracker.stopTrackingService) {
+                      CellularTracker.stopTrackingService();
+                    }
+                    if (AttendanceServiceBridge) {
+                      await AttendanceServiceBridge.stopAttendanceService();
+                    }
+                  }
+                  reportAttendanceForReminders(true, true, new Date());
+                }
+              }
+            }
           }
         }
       }).catch(err => console.warn("Failed to fetch attendance history", err.message));
 
-      api.get('/footprints').then(res => {
+      api.get('/footprints', { params: { userId: activeUserIdentifier, limit: 100 } }).then(res => {
         if (res.data && Array.isArray(res.data)) {
           const empCode = user?.empCode || user?.employeeCode;
           const uId = activeUid || user?.id;
@@ -906,7 +1044,11 @@ export default function useAttendance(targetUserId?: string) {
               (uName && f.userName && f.userName.toLowerCase() === uName)
             );
           });
-          setLocationHistory(userFootprints.length > 0 ? userFootprints : res.data);
+          if (userFootprints.length === 0 && res.data.length > 0) {
+            console.warn("[Attendance] Server returned footprints but none matched the current user; ignoring unfiltered response.");
+          } else {
+            setLocationHistory(userFootprints);
+          }
         }
       }).catch(err => console.warn("Failed to fetch location history", err.message));
 
@@ -963,6 +1105,10 @@ export default function useAttendance(targetUserId?: string) {
         // Native is the source of truth, bypass AsyncStorage discrepancies
       } else if (savedStateStr) {
         const savedState = JSON.parse(savedStateStr);
+        if (savedState.status === "Checked In" && savedState.checkInTimestamp && activeUid === user?.id) {
+          // Keeps the native reminders in step after an app restart (e.g. an offline clock-in not yet on the server).
+          reportAttendanceForReminders(true, false, new Date(savedState.checkInTimestamp));
+        }
         setStatus(savedState.status || "Not checked in");
         setCheckInTime(savedState.checkInTime || "");
         setCheckOutTime(savedState.checkOutTime || "");
@@ -1013,7 +1159,9 @@ export default function useAttendance(targetUserId?: string) {
         setAccumulatedSeconds(0);
         setLiveTimer("00:00:00");
       }
+      setIsStateRestored(true);
     } catch (e: any) {
+      // Leave isStateRestored false: with the real state unknown, keep native tracking as it is.
       console.warn("Failed to load local attendance state:", e.message);
     }
   };
@@ -1123,11 +1271,11 @@ export default function useAttendance(targetUserId?: string) {
         await AttendanceServiceBridge.startAttendanceService(user.id, user.token || "", API_BASE_URL, designationTarget);
       }
       
-      const modeLabel = targetMode === 'field' ? 'Field Duty' : 'Office Shift';
+      const modeLabel = targetMode === 'field' ? i18n.t('attendance:mode_field_duty', { defaultValue: 'Field Duty' }) : i18n.t('attendance:mode_office_shift', { defaultValue: 'Office Shift' });
       const modeDesc = targetMode === 'field' 
-        ? 'Geofence restrictions disabled. You can now clock in and clock out from anywhere.' 
-        : 'Standard office geofence rules are now active.';
-      Alert.alert("Shift Mode Updated", `You are now on ${modeLabel}.\n\n${modeDesc}`);
+        ? i18n.t('attendance:mode_field_desc', { defaultValue: 'Geofence restrictions disabled. You can now clock in and clock out from anywhere.' }) 
+        : i18n.t('attendance:mode_office_desc', { defaultValue: 'Standard office geofence rules are now active.' });
+      Alert.alert(i18n.t('attendance:mode_updated_title', { defaultValue: 'Shift Mode Updated' }), `${i18n.t('attendance:mode_updated_msg', { defaultValue: 'You are now on {{mode}}.', mode: modeLabel })}\n\n${modeDesc}`);
     } catch (err: any) {
       console.warn("[useAttendance Hook] Failed to switch work mode, applying locally:", err.message);
       
@@ -1141,9 +1289,91 @@ export default function useAttendance(targetUserId?: string) {
         await AsyncStorage.removeItem(`outOfGeofenceTime_${user.id}`).catch(() => {});
       }
 
-      const modeLabel = targetMode === 'field' ? 'Field Duty' : 'Office Shift';
+      const modeLabel = targetMode === 'field' ? i18n.t('attendance:mode_field_duty', { defaultValue: 'Field Duty' }) : i18n.t('attendance:mode_office_shift', { defaultValue: 'Office Shift' });
       Alert.alert("Shift Mode Updated (Offline)", `You are now on ${modeLabel}.`);
     }
+  };
+
+  // Ultra-fast location helper: checks fresh cached GNSS first (<15ms), then fused provider with 3.5s timeout, then fallbacks
+  const getFastLocation = async (): Promise<{ lat: number | null; lon: number | null }> => {
+    if (Platform.OS === 'web') {
+      try {
+        const pos = await new Promise<any>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 3000 });
+        });
+        return { lat: pos.coords.latitude, lon: pos.coords.longitude };
+      } catch (webGeoErr) {
+        console.warn("Web browser geolocation query failed:", webGeoErr);
+        return { lat: null, lon: null };
+      }
+    }
+
+    try {
+      const servicesEnabled = await Location.hasServicesEnabledAsync();
+      let permStatus = 'denied';
+      if (servicesEnabled) {
+        const perm = await Location.getForegroundPermissionsAsync();
+        permStatus = perm.status;
+        if (permStatus !== 'granted') {
+          const req = await Location.requestForegroundPermissionsAsync();
+          permStatus = req.status;
+        }
+      }
+
+      if (servicesEnabled && permStatus === 'granted') {
+        // 1. Instant cache check: if cached position is fresh (< 2 mins), return in ~5ms
+        try {
+          const lastKnown = await Location.getLastKnownPositionAsync({ maxAge: 120000 });
+          if (lastKnown && lastKnown.coords && (Date.now() - lastKnown.timestamp < 120000)) {
+            const { latitude, longitude } = lastKnown.coords;
+            lastKnownCoords.current = { latitude, longitude };
+            console.log(`[useAttendance] Used instant cached location: ${latitude}, ${longitude}`);
+            return { lat: latitude, lon: longitude };
+          }
+        } catch (lkErr) {
+          // ignore and fall through
+        }
+
+        // 2. High Accuracy GPS fix with 8s timeout for reliable clock-in/out geofence checks.
+        // Balanced accuracy (Wi-Fi/cell) can be off by hundreds of metres and falsely block clock-in.
+        // The cached check above (~5ms) still fires first; this 8s path only runs when the cache is stale.
+        try {
+          const locPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+          const timeoutPromise = new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error("LOC_TIMEOUT")), 8000)
+          );
+          const loc: any = await Promise.race([locPromise, timeoutPromise]);
+          if (loc && loc.coords) {
+            const { latitude, longitude } = loc.coords;
+            lastKnownCoords.current = { latitude, longitude };
+            return { lat: latitude, lon: longitude };
+          }
+        } catch (balErr) {
+          console.warn("[useAttendance] Fast location timed out or failed, checking fallbacks:", balErr);
+        }
+      }
+    } catch (err) {
+      console.warn("[useAttendance] Location service query failed:", err);
+    }
+
+    // 3. Fallback to in-memory lastKnownCoords if available
+    if (lastKnownCoords.current?.latitude && lastKnownCoords.current?.longitude) {
+      console.log("[useAttendance] Using lastKnownCoords fallback:", lastKnownCoords.current);
+      return { lat: lastKnownCoords.current.latitude, lon: lastKnownCoords.current.longitude };
+    }
+
+    // 4. Fallback to IP Geolocation if offline/indoor GPS failed
+    try {
+      const geoRes = await axios.get('https://ipinfo.io/json', { timeout: 3000 });
+      if (geoRes.data && geoRes.data.loc) {
+        const [ipLat, ipLon] = geoRes.data.loc.split(',').map(Number);
+        return { lat: ipLat, lon: ipLon };
+      }
+    } catch (ipErr) {
+      console.warn("[useAttendance] IP Geolocation fallback failed:", ipErr);
+    }
+
+    return { lat: null, lon: null };
   };
 
   const clockIn = async (workType?: string, forceBypass = false) => {
@@ -1159,11 +1389,11 @@ export default function useAttendance(targetUserId?: string) {
       }
       if (fgStatus !== 'granted') {
         Alert.alert(
-          "Location Permission Required",
-          "Because location access is required to track shift attendance, you are unable to clock in. Please allow location access.",
+          i18n.t('attendance:loc_perm_title', { defaultValue: 'Location Permission Required' }),
+          i18n.t('attendance:loc_perm_msg', { defaultValue: 'Because location access is required to track shift attendance, you are unable to clock in. Please allow location access.' }),
           [
-            { text: "Open Settings", onPress: () => Linking.openSettings() },
-            { text: "Cancel", style: "cancel" }
+            { text: i18n.t('attendance:open_settings', { defaultValue: 'Open Settings' }), onPress: () => Linking.openSettings() },
+            { text: i18n.t('attendance:cancel', { defaultValue: 'Cancel' }), style: "cancel" }
           ]
         );
         return;
@@ -1179,11 +1409,11 @@ export default function useAttendance(targetUserId?: string) {
       }
       if (bgStatus !== 'granted') {
         Alert.alert(
-          "Background Location Required",
-          "Because shift attendance must be validated continuously even when the app is minimized or your phone screen is locked, you are unable to clock in without 'Allow all the time' location permission.\n\nPlease select 'Allow all the time' in Settings.",
+          i18n.t('attendance:bg_perm_title', { defaultValue: 'Background Location Required' }),
+          i18n.t('attendance:bg_perm_msg', { defaultValue: 'Because shift attendance must be validated continuously even when the app is minimized or your phone screen is locked, you are unable to clock in without \'Allow all the time\' location permission.\n\nPlease select \'Allow all the time\' in Settings.' }),
           [
-            { text: "Open Settings", onPress: () => Linking.openSettings() },
-            { text: "Cancel", style: "cancel" }
+            { text: i18n.t('attendance:open_settings', { defaultValue: 'Open Settings' }), onPress: () => Linking.openSettings() },
+            { text: i18n.t('attendance:cancel', { defaultValue: 'Cancel' }), style: "cancel" }
           ]
         );
         return;
@@ -1193,11 +1423,11 @@ export default function useAttendance(targetUserId?: string) {
       const servicesEnabled = await Location.hasServicesEnabledAsync();
       if (!servicesEnabled) {
         Alert.alert(
-          "Location Services (GPS) Disabled",
-          "Because device GPS / Location Services is turned off, you are unable to clock in. Please turn ON GPS on your device.",
+          i18n.t('attendance:gps_disabled_title', { defaultValue: 'Location Services (GPS) Disabled' }),
+          i18n.t('attendance:gps_disabled_msg', { defaultValue: 'Because device GPS / Location Services is turned off, you are unable to clock in. Please turn ON GPS on your device.' }),
           [
             { 
-              text: "Open GPS Settings", 
+              text: i18n.t('attendance:open_gps_settings', { defaultValue: 'Open GPS Settings' }), 
               onPress: () => {
                 if (Platform.OS === 'android') {
                   Linking.sendIntent('android.settings.LOCATION_SOURCE_SETTINGS').catch(() => Linking.openSettings());
@@ -1206,7 +1436,7 @@ export default function useAttendance(targetUserId?: string) {
                 }
               } 
             },
-            { text: "Cancel", style: "cancel" }
+            { text: i18n.t('attendance:cancel', { defaultValue: 'Cancel' }), style: "cancel" }
           ]
         );
         return;
@@ -1217,21 +1447,28 @@ export default function useAttendance(targetUserId?: string) {
     setSelectedWorkType(typeToSet);
     await AsyncStorage.setItem(`selectedWorkType_${user.id}`, typeToSet);
     
-    // Enterprise Integration: Force Battery Optimization & Auto-Start Whitelisting
-    if (Platform.OS === 'android' && LocationTracking && LocationTracking.checkBatteryOptimization) {
-      try {
-        const isIgnoring = await LocationTracking.checkBatteryOptimization();
-        const hasConfigured = await AsyncStorage.getItem('hasConfiguredBackgroundSettings');
-        if (!isIgnoring || !hasConfigured) {
-          await AsyncStorage.setItem('hasConfiguredBackgroundSettings', 'true');
-          try {
-            await LocationTracking.requestBatteryOptimization();
-          } catch (optErr) {
-            console.warn("[useAttendance Hook] Failed to request battery optimization:", optErr);
-          }
-        }
-      } catch (err) {
-        console.warn("Battery optimization check failed", err);
+    // Enterprise Integration: Force Battery Optimization off. While optimized, Android pauses tracking
+    // in the background and refuses to restart it after killing it, so pings are missed mid-shift.
+    // (getDiagnostics reports "ignored" when it can't tell, so a failed check never blocks clock-in.)
+    if (Platform.OS === 'android' && CellularTracker.isNative) {
+      const diagnostics = await CellularTracker.getDiagnostics();
+      if (!diagnostics.isBatteryOptimizationIgnored) {
+        Alert.alert(
+          i18n.t('attendance:battery_title', { defaultValue: 'Battery Optimization Must Be Off' }),
+          i18n.t('attendance:battery_msg', { defaultValue: 'Because Android pauses attendance tracking for battery-optimized apps, you are unable to clock in until battery optimization is turned off for HRMS.\n\nTap \'Turn Off\', choose \'Allow\', then clock in again.' }),
+          [
+            {
+              text: i18n.t('attendance:turn_off', { defaultValue: 'Turn Off' }),
+              onPress: () => {
+                if (!CellularTracker.requestBatteryOptimizationExemption()) {
+                  Linking.sendIntent('android.settings.IGNORE_BATTERY_OPTIMIZATION_SETTINGS').catch(() => Linking.openSettings());
+                }
+              }
+            },
+            { text: i18n.t('attendance:cancel', { defaultValue: 'Cancel' }), style: "cancel" }
+          ]
+        );
+        return;
       }
     }
 
@@ -1244,46 +1481,8 @@ export default function useAttendance(targetUserId?: string) {
       // Reset tracking counter to start with GPS on clock in
       cellChecksCount.current = 0;
 
-      let lat: number | null = null;
-      let lon: number | null = null;
-      if (Platform.OS !== 'web') {
-        try {
-          let loc;
-          try {
-            loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-          } catch (highErr) {
-            console.warn("High accuracy failed, retrying with Balanced accuracy:", highErr);
-            loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-          }
-          lat = loc.coords.latitude;
-          lon = loc.coords.longitude;
-          lastKnownCoords.current = { latitude: lat, longitude: lon };
-        } catch (err) {
-          console.warn("Could not get position on native device, attempting IP fallback:", err);
-          try {
-            const geoRes = await axios.get('http://ip-api.com/json/', { timeout: 3000 });
-            if (geoRes.data && geoRes.data.status === 'success') {
-              lat = geoRes.data.lat;
-              lon = geoRes.data.lon;
-            }
-          } catch (ipErr) {
-            Alert.alert("Unable to Clock In", "Location coordinates could not be acquired. Please ensure GPS has a clear view of the sky.");
-            return;
-          }
-        }
-      } else {
-        // Web Platform: Try browser location
-        try {
-          const pos = await new Promise<any>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 3000 });
-          });
-          lat = pos.coords.latitude;
-          lon = pos.coords.longitude;
-        } catch (webGeoErr) {
-          lat = 28.6692;
-          lon = 77.4538;
-        }
-      }
+      // Ultra-fast location acquisition: check cached first, then fast Fused fix with timeout
+      const { lat, lon } = await getFastLocation();
 
       // Geofence enforcement: Completely bypassed on Field Duty (clock in from any place)
       const activeWorkMode = workMode;
@@ -1295,23 +1494,35 @@ export default function useAttendance(targetUserId?: string) {
 
       if (!isFieldDuty) {
         if (lat === null || lon === null) {
-          const msg = "Because location coordinates could not be determined, you are unable to clock in. Office employees must be within the office geofence.";
+          const msg = i18n.t('attendance:no_coords_clock_in', { defaultValue: 'Because location coordinates could not be determined, you are unable to clock in. Office employees must be within the office geofence.' });
           if (Platform.OS === 'web') window.alert(msg);
-          else Alert.alert("Unable to Clock In", msg);
+          else Alert.alert(i18n.t('attendance:unable_clock_in', { defaultValue: 'Unable to Clock In' }), msg);
           return;
         }
 
         const gfCheck = await checkGeofenceBoundaries(lat, lon);
+        if (!gfCheck.available) {
+          if (Platform.OS === 'web') window.alert(geofenceUnavailableMsg());
+          else Alert.alert(i18n.t('attendance:unable_clock_in', { defaultValue: 'Unable to Clock In' }), geofenceUnavailableMsg());
+          return;
+        }
         if (!gfCheck.inside) {
-          const msg = `Because you are outside the office geofence boundary, you are unable to clock in.\n\n• Nearest boundary: ${Math.round(gfCheck.minDistance)}m away\n• Allowed radius: ${Math.round(gfCheck.maxRadius)}m\n\nIf you are on field duty, please switch to Field Duty shift on the home screen to clock in from anywhere.`;
+          const msg = i18n.t('attendance:outside_clock_in_msg', { defaultValue: 'Because you are outside the office geofence boundary, you are unable to clock in.\n\n• Nearest boundary: {{distance}}m away\n• Allowed radius: {{radius}}m\n\nIf you are on field duty, please switch to Field Duty shift on the home screen to clock in from anywhere.', distance: Math.round(gfCheck.minDistance), radius: Math.round(gfCheck.maxRadius) });
           if (Platform.OS === 'web') window.alert(msg);
-          else Alert.alert("Outside Office Geofence", msg);
+          else Alert.alert(i18n.t('attendance:outside_geofence', { defaultValue: 'Outside Office Geofence' }), msg);
           return;
         }
       } else {
         console.log("[useAttendance Hook] Field duty active. Bypassing office geofence verification on clock-in.");
       }
       
+      // Pre-flight check: flush any pending offline attendance records (e.g. yesterday's offline clock-out) before opening a new shift
+      try {
+        await syncOfflineData();
+      } catch (syncErr: any) {
+        console.warn("[Clock-In Preflight] Offline sync attempt deferred:", syncErr?.message);
+      }
+
       const time = new Date().toLocaleTimeString();
       const timestamp = Date.now();
 
@@ -1348,6 +1559,7 @@ export default function useAttendance(targetUserId?: string) {
           return; // Abort local clock-in
         } else {
           console.warn("[Clock-In Sync Warning] Network error, permitting local offline clock-in:", postErr.message);
+          await enqueueOfflineAttendance(clockInRecord);
         }
       }
 
@@ -1357,6 +1569,8 @@ export default function useAttendance(targetUserId?: string) {
       setCheckInTimestamp(timestamp); 
       setCheckInTime(time); 
       setStatus("Checked In");
+      // Stops today's clock-in reminders, including when this clock-in is still queued offline.
+      reportAttendanceForReminders(true, false, new Date(timestamp));
       await saveState("Checked In", time, "", "", timestamp, 0);
       await AsyncStorage.setItem(`workMode_${user.id}`, isFieldDuty ? 'field' : 'office');
 
@@ -1372,7 +1586,7 @@ export default function useAttendance(targetUserId?: string) {
       }
     } catch (e: any) { 
       console.error("Clock-in failed", e);
-      Alert.alert("Clock-In Error", e?.message || "An unexpected error occurred during clock-in.");
+      Alert.alert(i18n.t('attendance:clock_in_error', { defaultValue: 'Clock-In Error' }), e?.message || i18n.t('attendance:clock_in_unexpected', { defaultValue: 'An unexpected error occurred during clock-in.' }));
     }
   };
 
@@ -1381,76 +1595,16 @@ export default function useAttendance(targetUserId?: string) {
     if (!user?.id) return;
     if (status !== "Checked In") {
       if (Platform.OS === 'web') {
-        window.alert("You must clock in first before you can clock out.");
+        window.alert(i18n.t('attendance:must_clock_in_first', { defaultValue: 'You must clock in first before you can clock out.' }));
       } else {
-        Alert.alert("Error", "You must clock in first before you can clock out.");
+        Alert.alert(i18n.t('attendance:error', { defaultValue: 'Error' }), i18n.t('attendance:must_clock_in_first', { defaultValue: 'You must clock in first before you can clock out.' }));
       }
       return;
     }
 
     try {
-      let lat: number | null = null;
-      let lon: number | null = null;
-      if (Platform.OS !== 'web') {
-        try {
-          const servicesEnabled = await Location.hasServicesEnabledAsync();
-          let permStatus = 'denied';
-          if (servicesEnabled) {
-            const perm = await Location.getForegroundPermissionsAsync();
-            permStatus = perm.status;
-            if (permStatus !== 'granted') {
-              const req = await Location.requestForegroundPermissionsAsync();
-              permStatus = req.status;
-            }
-          }
-
-          if (servicesEnabled && permStatus === 'granted') {
-            let loc;
-            try {
-              loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-            } catch (highErr) {
-              console.warn("High accuracy failed, retrying with Balanced accuracy:", highErr);
-              loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            }
-            lat = loc.coords.latitude;
-            lon = loc.coords.longitude;
-            lastKnownCoords.current = { latitude: lat, longitude: lon };
-          } else {
-            console.log("Location services off or permissions denied. Attempting IP Geolocation fallback for clock-out.");
-            try {
-              const geoRes = await axios.get('http://ip-api.com/json/', { timeout: 3000 });
-              if (geoRes.data && geoRes.data.status === 'success') {
-                lat = geoRes.data.lat;
-                lon = geoRes.data.lon;
-                console.log(`Clock-out IP Geolocation successful: ${lat}, ${lon} (${geoRes.data.city})`);
-              } else {
-                Alert.alert("Location Error", "Location services are turned off and network IP Geolocation failed.");
-                return;
-              }
-            } catch (ipErr: any) {
-              console.warn("IP Geolocation failed for clock-out:", ipErr.message);
-              Alert.alert("Location Error", "Please enable Location Services or connect to the internet to clock out.");
-              return;
-            }
-          }
-        } catch (err) {
-          console.warn("Could not get position on native device:", err);
-        }
-      } else {
-        // Web Platform: Try browser location
-        try {
-          const pos = await new Promise<any>((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 3000 });
-          });
-          lat = pos.coords.latitude;
-          lon = pos.coords.longitude;
-        } catch (webGeoErr) {
-          console.warn("Web browser geolocation query failed:", webGeoErr);
-          // Mock near seeded geofence for simple local development
-          lat = 28.6692;
-          lon = 77.4538;
-        }
-      }
+      // Ultra-fast location acquisition for clock-out: cached first, then fast Fused fix with timeout
+      const { lat, lon } = await getFastLocation();
 
       // Geofence enforcement: Completely bypassed on Field Duty (clock out from any place)
       let userDesignation = user?.designation || 'OFFICE';
@@ -1471,17 +1625,22 @@ export default function useAttendance(targetUserId?: string) {
 
       if (!isFieldDuty) {
         if (lat === null || lon === null) {
-          const msg = "Because location coordinates could not be determined, you are unable to clock out. Office employees must be within the office geofence.";
+          const msg = i18n.t('attendance:no_coords_clock_out', { defaultValue: 'Because location coordinates could not be determined, you are unable to clock out. Office employees must be within the office geofence.' });
           if (Platform.OS === 'web') window.alert(msg);
-          else Alert.alert("Geofence Verification", msg);
+          else Alert.alert(i18n.t('attendance:geofence_verification', { defaultValue: 'Geofence Verification' }), msg);
           return;
         }
 
         const gfCheck = await checkGeofenceBoundaries(lat, lon);
+        if (!gfCheck.available) {
+          if (Platform.OS === 'web') window.alert(geofenceUnavailableMsg());
+          else Alert.alert(i18n.t('attendance:geofence_verification', { defaultValue: 'Geofence Verification' }), geofenceUnavailableMsg());
+          return;
+        }
         if (!gfCheck.inside) {
-          const msg = `Because you are outside the office geofence area (${Math.round(gfCheck.minDistance)}m away, allowed: ${Math.round(gfCheck.maxRadius)}m), you are unable to clock out in Office Shift mode.\n\nSwitch to Field Duty shift on the home screen or return within the office boundary to clock out.`;
+          const msg = i18n.t('attendance:outside_clock_out_msg', { defaultValue: 'Because you are outside the office geofence area ({{distance}}m away, allowed: {{radius}}m), you are unable to clock out in Office Shift mode.\n\nSwitch to Field Duty shift on the home screen or return within the office boundary to clock out.', distance: Math.round(gfCheck.minDistance), radius: Math.round(gfCheck.maxRadius) });
           if (Platform.OS === 'web') window.alert(msg);
-          else Alert.alert("Outside Office Geofence", msg);
+          else Alert.alert(i18n.t('attendance:outside_geofence', { defaultValue: 'Outside Office Geofence' }), msg);
           return;
         }
       } else {
@@ -1515,19 +1674,29 @@ export default function useAttendance(targetUserId?: string) {
         workType: isFieldDuty ? 'FIELD' : (selectedWorkType || (user?.workTypes && user.workTypes.length === 1 ? user.workTypes[0] : 'Office'))
       };
 
-      setCheckInTime("");
-      setCheckOutTime("");
-      setWorkingHours("");
-      setStatus("Not checked in");
-      setCheckInTimestamp(null);
-      setLiveTimer("00:00:00");
-      setAccumulatedSeconds(0);
-      accumulatedSecondsRef.current = 0;
-      isOutsideGeofenceRef.current = false;
+      // Stops the shift's clock-out reminders. The shift date is the clock-in day (matters for cross-day shifts).
+      reportAttendanceForReminders(true, true, checkInTimestamp ? new Date(checkInTimestamp) : new Date());
 
       try {
         const response = await api.post('/attendance', newRecord);
         logDebug("ATTENDANCE", "CLOCK_OUT_HTTP_SYNC", "SUCCESS", user.id, `Time: ${time}`);
+        console.log("Attendance record synced to DB successfully:", response.data);
+
+        if (Platform.OS === 'android' && CellularTracker && CellularTracker.clearOfflineClockOut) {
+          CellularTracker.clearOfflineClockOut();
+        }
+
+        // ✅ UI state resets AFTER successful API call — prevents race with stopWatchingLocation
+        setCheckInTime("");
+        setCheckOutTime("");
+        setWorkingHours("");
+        setStatus("Not checked in");
+        setCheckInTimestamp(null);
+        setLiveTimer("00:00:00");
+        setAccumulatedSeconds(0);
+        accumulatedSecondsRef.current = 0;
+        isOutsideGeofenceRef.current = false;
+
         const activeUid = targetUserId || user?.id;
         if (activeUid === user.id) {
           setAttendanceHistory(prev => {
@@ -1536,10 +1705,24 @@ export default function useAttendance(targetUserId?: string) {
             return updated;
           });
         }
-        console.log("Attendance record synced to DB successfully:", response.data);
       } catch (dbErr: any) {
         logDebug("ATTENDANCE", "CLOCK_OUT_HTTP_SYNC", "FAILURE", user.id, dbErr.message);
         console.error("Failed to sync attendance to DB:", dbErr.message);
+
+        // Buffer clock-out to offlineQueue so it syncs when server comes back online or next day on clock-in
+        await enqueueOfflineAttendance(newRecord);
+
+        // Even on API failure, still reset UI so user is not stuck in "Checked In" state
+        setCheckInTime("");
+        setCheckOutTime("");
+        setWorkingHours("");
+        setStatus("Not checked in");
+        setCheckInTimestamp(null);
+        setLiveTimer("00:00:00");
+        setAccumulatedSeconds(0);
+        accumulatedSecondsRef.current = 0;
+        isOutsideGeofenceRef.current = false;
+
         const activeUid = targetUserId || user?.id;
         if (activeUid === user.id) {
           setAttendanceHistory(prev => {

@@ -1,6 +1,6 @@
 import * as Network from 'expo-network';
-import * as FileSystem from 'expo-file-system';
-import * as SecureStore from 'expo-secure-store';
+import * as FileSystem from 'expo-file-system/legacy';
+import { getSecureItem } from '@/utils/storage';
 import { Platform, AppState, AppStateStatus } from 'react-native';
 import axios from 'axios';
 import { API_BASE_URL } from '@/constants/API';
@@ -235,7 +235,7 @@ class GeotagPhotoSyncManager {
       formData.append('date', new Date(capturedAt).toISOString().split('T')[0]);
 
       const targetUrl = `${API_BASE_URL.replace(/\/$/, '')}/media`;
-      const token = await SecureStore.getItemAsync('userToken');
+      const token = await getSecureItem('userToken');
       const headers: Record<string, string> = {
         'Content-Type': 'multipart/form-data',
         'Accept': 'application/json'

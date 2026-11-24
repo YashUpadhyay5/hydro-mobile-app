@@ -17,6 +17,7 @@ import { BackArrowSvgIcon } from '@/components/ui/SvgIcons';
 import { EmployeeProfile, MessageItem, AttachmentItem } from '@/services/chatService';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { resolveAvatarUrl } from '@/utils/avatar';
 
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
@@ -50,7 +51,7 @@ export default function EmployeeChatDetailScreen({
       const downloadRes = await FileSystem.downloadAsync(url, fileUri);
 
       if (downloadRes.status !== 200) {
-        Alert.alert('Download Error', 'Could not download file from server.');
+        Alert.alert(t('communication:download_error', { defaultValue: 'Download Error' }), t('communication:could_not_download_file_from_server', { defaultValue: 'Could not download file from server.' }));
         return;
       }
 
@@ -60,7 +61,7 @@ export default function EmployeeChatDetailScreen({
           const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
           await MediaLibrary.createAlbumAsync('HRMS App', asset, false);
           Alert.alert(
-            'Saved to Photos 🖼️',
+            t('communication:saved_to_photos', { defaultValue: 'Saved to Photos 🖼️' }),
             `"${name}" has been saved directly to your phone's Photo Gallery (Album: HRMS App)!`
           );
           return;
@@ -73,7 +74,7 @@ export default function EmployeeChatDetailScreen({
       );
     } catch (err) {
       console.error('[handleDownloadDirect error]', err);
-      Alert.alert('Download Error', 'Could not save file to device.');
+      Alert.alert(t('communication:download_error', { defaultValue: 'Download Error' }), t('communication:could_not_save_file_to_device', { defaultValue: 'Could not save file to device.' }));
     }
   };
 
@@ -132,9 +133,16 @@ export default function EmployeeChatDetailScreen({
         {/* Profile Card Header */}
         <View style={[styles.profileCard, isDark && styles.profileCardDark]}>
           <View style={styles.avatarCircle}>
-            <Text style={styles.avatarText}>
-              {employee.name ? employee.name.substring(0, 2).toUpperCase() : 'EM'}
-            </Text>
+            {resolveAvatarUrl(employee.avatar) ? (
+              <Image 
+                source={{ uri: resolveAvatarUrl(employee.avatar)! }} 
+                style={styles.avatarImg} 
+              />
+            ) : (
+              <Text style={styles.avatarText}>
+                {employee.name ? employee.name.substring(0, 2).toUpperCase() : 'EM'}
+              </Text>
+            )}
             <View
               style={[
                 styles.onlineDot,
@@ -145,7 +153,7 @@ export default function EmployeeChatDetailScreen({
 
           <Text style={[styles.empName, isDark && styles.textDark]}>{employee.name}</Text>
           <Text style={styles.empDesignation}>
-            {employee.designation || 'Employee'} • {employee.department || 'General'}
+            {employee.designation || t('communication:employee', { defaultValue: 'Employee' })} • {employee.department || t('communication:general', { defaultValue: 'General' })}
           </Text>
           <Text style={styles.empEmail}>{employee.email}</Text>
 
@@ -275,7 +283,7 @@ export default function EmployeeChatDetailScreen({
               <IconSymbol name="xmark" size={24} color="#ffffff" />
             </TouchableOpacity>
             <Text style={styles.previewTitle} numberOfLines={1}>
-              {selectedAttachment?.fileName || 'Attachment Preview'}
+              {selectedAttachment?.fileName || t('communication:attachment_preview', { defaultValue: 'Attachment Preview' })}
             </Text>
           </View>
 
@@ -298,7 +306,7 @@ export default function EmployeeChatDetailScreen({
             >
               <IconSymbol name="arrow.down.circle.fill" size={24} color="#ffffff" />
               <Text style={styles.downloadActionText}>
-                {t('communication:download_attachment', { defaultValue: 'Download / Save File' })}
+                {t('communication:download_attachment_v2', { defaultValue: 'Download / Save File' })}
               </Text>
             </TouchableOpacity>
           </View>
@@ -362,6 +370,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     position: 'relative',
     marginBottom: 12,
+  },
+  avatarImg: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#cbd5e1',
   },
   avatarText: {
     color: '#ffffff',

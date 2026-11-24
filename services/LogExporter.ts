@@ -1,9 +1,9 @@
 // services/LogExporter.ts
 import { Platform, Share } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Device from 'expo-device';
 import * as Battery from 'expo-battery';
-import { API_BASE_URL } from '@/constants/API';
+import { API_BASE_URL, isUsingConfiguredBackend } from '@/constants/API';
 import CellularTracker from '@/modules/cellular-tracker';
 import { getActiveJSSyncSession } from './DebugLogger';
 
@@ -18,7 +18,7 @@ export interface DiagnosticsReportData {
   };
   apiConfig: {
     activeBaseUrl: string;
-    isProductionBackend: boolean;
+    isConfiguredBackend: boolean;
   };
   roomDiagnostics: any;
   syncSessionId: string;
@@ -52,7 +52,7 @@ export const generateDiagnosticsReport = async (): Promise<DiagnosticsReportData
     },
     apiConfig: {
       activeBaseUrl: API_BASE_URL,
-      isProductionBackend: API_BASE_URL === 'https://hydro-hrms-app.onrender.com/api'
+      isConfiguredBackend: isUsingConfiguredBackend()
     },
     roomDiagnostics: roomDiag,
     syncSessionId: getActiveJSSyncSession(),
@@ -78,7 +78,7 @@ Platform: ${reportData.deviceInfo.platform}
 
 [API CONFIGURATION]
 Active API Base URL: ${reportData.apiConfig.activeBaseUrl}
-Production Host Match: ${reportData.apiConfig.isProductionBackend ? 'YES' : 'NO'}
+Using Build-Configured Backend: ${reportData.apiConfig.isConfiguredBackend ? 'YES' : 'NO (runtime override)'}
 
 [ROOM DATABASE DIAGNOSTICS]
 Pending Count: ${reportData.roomDiagnostics?.pendingCount ?? 'N/A'}

@@ -6,15 +6,10 @@ import { API_BASE_URL } from '@/constants/API';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import AttendanceServiceBridge from './AttendanceServiceBridge';
+import { getSecureItem } from '@/utils/storage';
+import { formatDateISO } from '@/utils/date';
 
 export const BACKGROUND_LOCATION_TASK = 'BACKGROUND_LOCATION_TASK';
-
-const formatDateISO = (d: Date) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
   if (error) {
@@ -28,11 +23,14 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
       console.log('[BackgroundLocationTask] Location received:', loc.coords.latitude, loc.coords.longitude);
 
       try {
-        // Retrieve the currently active user from storage
-        let userStr = await AsyncStorage.getItem('userProfile');
-        if (!userStr) userStr = await AsyncStorage.getItem('authUser');
-        if (!userStr) userStr = await AsyncStorage.getItem('@user_profile');
-        
+        // Retrieve the currently active user. Prefer the shared getSecureItem helper
+        // (handles both SecureStore on native and localStorage on web), and fall back
+        // to legacy AsyncStorage keys for sessions saved before this migration.
+        const userStr =
+          (await getSecureItem('userProfile')) ||
+          (await AsyncStorage.getItem('userProfile')) ||
+          (await AsyncStorage.getItem('authUser')) ||
+          (await AsyncStorage.getItem('@user_profile'));
         if (userStr) {
           const user = JSON.parse(userStr);
           
@@ -54,29 +52,23 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, async ({ data, error }) => {
                 // Ignore battery retrieval errors in fallback
               }
 
-              // Retrieve configured location_provider setting
-              const settingsStr = await AsyncStorage.getItem('@app_settings');
-              let trackingMethod = 'GPS';
-              if (settingsStr) {
-                try {
-                  const s = JSON.parse(settingsStr);
-                  if (s.location_provider === 'GPS Only') trackingMethod = 'GPS';
-                  else if (s.location_provider === 'GPS + Cellular') trackingMethod = 'CELLULAR';
-                  else trackingMethod = 'GPS';
-                } catch (sErr) {}
-              }
-
+              // This task only ever receives high-accuracy location updates, never cell-tower pings,
+              // so it is always GPS regardless of the configured provider ratio.
               const newPoint = {
                 id: `loc_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
                 userId: user.empCode || user.id || user._id,
                 empCode: user.empCode || user.id,
                 latitude: loc.coords.latitude,
                 longitude: loc.coords.longitude,
+                // Record time; fixTimestamp is when the OS actually computed this position (the server
+                // rejects the coordinates if the gap is too large, e.g. a batched or replayed fix).
                 timestamp: Date.now(),
+                fixTimestamp: loc.timestamp,
+                captureSource: 'EXPO_BACKGROUND_TASK',
                 date: formatDateISO(new Date()),
                 locationEnabled: true,
-                trackingMethod,
-                locationSource: trackingMethod,
+                trackingMethod: 'GPS',
+                locationSource: 'GPS',
                 accuracy: loc.coords.accuracy,
                 speed: loc.coords.speed || 0,
                 altitude: loc.coords.altitude || 0,

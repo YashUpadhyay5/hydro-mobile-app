@@ -1,0 +1,16 @@
+{
+  "denied_title": "Permiso denegado",
+  "camera_required": "Se requiere acceso a la cámara para tomar fotos geoetiquetadas.",
+  "location_required": "Se requiere acceso a la ubicación para geoetiquetar sus fotos.",
+  "location_required_v2": "Se requieren permisos de ubicación para obtener las coordenadas actuales.",
+  "gps_off_title": "Servicios de ubicación desactivados",
+  "enable_gps": "Active el GPS o los servicios de ubicación en su dispositivo.",
+  "camera_required_v2": "Se requiere acceso a la cámara.",
+  "photos_required": "Se requiere acceso a las fotos.",
+  "photos_required_v2": "Se requiere permiso de almacenamiento y multimedia para adjuntar archivos.",
+  "camera_perm_title": "Se requiere permiso de cámara",
+  "camera_perm_desc": "La app necesita acceso a la cámara para las fotos geoetiquetadas.",
+  "location_perm_title": "Se requiere permiso de ubicación",
+  "location_perm_desc": "La app necesita acceso a la ubicación para verificar la geovalla.",
+  "grant_permission": "Conceder permiso"
+}

@@ -5,15 +5,21 @@ import { LeafletMap } from '../components/LeafletMap';
 import api from '@/services/api';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from "@/constants/API";
+import { WORLD_REGION } from '@/constants/map';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AdminLiveTrackingScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { t } = useTranslationSafe(['tracking', 'common']);
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const firstLocation: any = locations.find(
+    (loc: any) => typeof loc.latitude === 'number' && typeof loc.longitude === 'number'
+  );
 
   const fetchLocations = async () => {
     try {
@@ -35,8 +41,11 @@ export default function AdminLiveTrackingScreen() {
   }, []);
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-      <View className="flex-row items-center px-6 py-4.5 bg-white border-b border-border z-10">
+    <View className="flex-1 bg-background">
+      <View 
+        className="flex-row items-center px-6 bg-white border-b border-border z-10"
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <TouchableOpacity className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4" onPress={() => router.back()}>
           <IconSymbol name="chevron.left" color="#0f172a" size={24} />
         </TouchableOpacity>
@@ -54,12 +63,12 @@ export default function AdminLiveTrackingScreen() {
       ) : (
         <View className="flex-1 relative">
           <LeafletMap
-            initialRegion={{
-              latitude: 28.6692,
-              longitude: 77.4538,
+            initialRegion={firstLocation ? {
+              latitude: firstLocation.latitude,
+              longitude: firstLocation.longitude,
               latitudeDelta: 0.1,
               longitudeDelta: 0.1,
-            }}
+            } : WORLD_REGION}
             markers={locations.map((loc: any) => ({
               latitude: loc.latitude,
               longitude: loc.longitude,

@@ -1,5 +1,5 @@
 import { io, Socket } from 'socket.io-client';
-import * as SecureStore from 'expo-secure-store';
+import { getSecureItem } from '@/utils/storage';
 import { API_BASE_URL } from '@/constants/API';
 
 class SocketService {
@@ -16,8 +16,8 @@ class SocketService {
     }
 
     this.currentUserId = userId;
-    const token = await SecureStore.getItemAsync('userToken');
-    const socketUrl = API_BASE_URL.replace('/api', '');
+    const token = await getSecureItem('userToken');
+    const socketUrl = API_BASE_URL.replace(/\/api\/?$/, '');
 
     this.socket = io(socketUrl, {
       auth: {

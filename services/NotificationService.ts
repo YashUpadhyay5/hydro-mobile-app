@@ -1,6 +1,7 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import CellularTracker from '../modules/cellular-tracker';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -22,6 +23,9 @@ export async function registerForPushNotificationsAsync() {
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF231F7C',
     });
+    // The ringing channel for Day Activity alarms (id "activity_alarm"). A killed app only rings for a push
+    // that is sent on this channel, so the server's time-is-up push should use it as its channelId.
+    CellularTracker.ensureActivityAlarmChannel();
   }
 
   if (Device.isDevice) {

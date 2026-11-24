@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TextInput,
   TouchableOpacity,
@@ -21,6 +22,8 @@ import { getDocTypeInfo, formatDocOrMessageSnippet, chatNotificationManager } fr
 import { ChatReadManager } from '@/utils/chatReadManager';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { resolveAvatarUrl } from '@/utils/avatar';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 interface EmployeeListProps {
   currentUserId: string;
@@ -293,6 +296,8 @@ export default function EmployeeList({ currentUserId, onSelectEmployee, onBack }
     const hasUnread = hasConversation && unreadCount > 0;
     const isSentByMe = hasConversation && item.lastSenderId === currentUserId;
 
+    const avatarUrl = resolveAvatarUrl(item.avatar);
+
     return (
       <TouchableOpacity
         style={[styles.card, isDark && styles.cardDark, hasUnread && styles.cardUnread]}
@@ -301,9 +306,13 @@ export default function EmployeeList({ currentUserId, onSelectEmployee, onBack }
       >
         {/* WhatsApp Avatar with Green Online Dot */}
         <View style={styles.avatarWrapper}>
-          <View style={[styles.avatar, { backgroundColor: getAvatarColor(item.id) }]}>
-            <Text style={styles.avatarText}>{initials}</Text>
-          </View>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <View style={[styles.avatar, { backgroundColor: getAvatarColor(item.id) }]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
           <View
             style={[
               styles.onlineDot,
@@ -389,7 +398,7 @@ export default function EmployeeList({ currentUserId, onSelectEmployee, onBack }
           <Text style={[styles.headerTitle, isDark && styles.textDark]}>
             {t('communication:chats', { defaultValue: 'Chats' })}
           </Text>
-          <Text style={styles.headerSubTitle}>Enterprise Realtime Messaging</Text>
+          <Text style={styles.headerSubTitle}>{t('communication:enterprise_realtime_messaging', { defaultValue: 'Enterprise Realtime Messaging' })}</Text>
         </View>
       </View>
 
@@ -513,7 +522,7 @@ function formatMessageTime(dateStr?: string | number | null) {
   const isToday = d.toDateString() === now.toDateString();
   
   if (isToday) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return d.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' });
   }
   
   const yesterday = new Date(now);
@@ -522,7 +531,7 @@ function formatMessageTime(dateStr?: string | number | null) {
     return 'Yesterday';
   }
   
-  return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({
@@ -720,6 +729,12 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#cbd5e1',
   },
   avatarText: {
     color: '#ffffff',

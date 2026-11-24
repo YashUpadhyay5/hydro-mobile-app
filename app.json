@@ -1,9 +1,8 @@
 {
   "expo": {
     "name": "HRMS Mobile",
-    "slug": "hydro-cloud-app",
-    "owner": "yashupadhyay486",
-    "version": "1.0.0",
+    "slug": "mobile-app",
+    "version": "1.5.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobileapp",
@@ -25,6 +24,7 @@
     },
     "android": {
       "allowBackup": false,
+      "largeHeap": true,
       "adaptiveIcon": {
         "backgroundColor": "#0F172A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -84,6 +84,7 @@
         {
           "android": {
             "usesCleartextTraffic": true,
+            "useLegacyPackaging": true,
             "reactNativeArchitectures": [
               "armeabi-v7a",
               "arm64-v8a"
@@ -100,8 +101,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "3b82a4ad-4528-4aee-aaf2-522dc6f204f5"
+        "projectId": "6f53308d-c060-4058-b155-2c5419698f13"
       }
-    }
+    },
+    "owner": "abcd159"
   }
 }

@@ -21,6 +21,7 @@ import {
   requestNotificationPermission
 } from '@/services/DeviceHealthService';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import CellularTracker from '@/modules/cellular-tracker';
 
 interface SetupWizardModalProps {
   visible: boolean;
@@ -37,14 +38,18 @@ export function SetupWizardModal({
   onRefresh,
   onContinueAnyway,
 }: SetupWizardModalProps) {
+  // ⚠️ IMPORTANT: All hooks must be called unconditionally (Rules of Hooks).
+  // Do NOT move these below any conditional return — doing so causes a
+  // "Rendered more hooks than during the previous render" crash, especially
+  // on 32-bit (armeabi-v7a) Hermes builds.
   const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['settings', 'common', 'permissions']);
   const [autoStartMarkedDone, setAutoStartMarkedDone] = useState(false);
 
-  if (!visible || !healthReport) return null;
-
-  const isHighRisk = healthReport.riskLevel === 'High';
-  const mfg = healthReport.manufacturer.toLowerCase();
+  // Compute derived values using optional chaining so they are safe when
+  // healthReport is null (happens before the early return below).
+  const isHighRisk = healthReport?.riskLevel === 'High';
+  const mfg = (healthReport?.manufacturer ?? '').toLowerCase();
 
   // Determine if Auto-Start is applicable for this device
   const isAutoStartApplicable = isHighRisk && (
@@ -61,7 +66,13 @@ export function SetupWizardModal({
     mfg.includes('huawei')
   );
 
-  const { score, level, color } = computeReliabilityScore(healthReport, autoStartMarkedDone);
+  // Guard computeReliabilityScore — it requires a non-null healthReport.
+  const { score, level, color } = healthReport
+    ? computeReliabilityScore(healthReport, autoStartMarkedDone)
+    : { score: 0, level: 'Loading...', color: '#9CA3AF' };
+
+  // ✅ Early return is safe here — all hooks have already been called above.
+  if (!visible || !healthReport) return null;
 
   const steps = [
     {
@@ -133,11 +144,14 @@ export function SetupWizardModal({
       id: 'autostart',
       icon: 'flash-outline',
       title: t('settings:step_autostart_title', { defaultValue: '6. Enable Auto-Start' }),
-      description: t('settings:step_autostart_desc', { defaultValue: `Your ${healthReport.manufacturer} phone requires Auto-Start permission to prevent background logs from freezing.` }),
+      description: t('settings:step_autostart_desc', { defaultValue: 'Your {{device}} phone requires Auto-Start permission to prevent background logs from freezing.', device: healthReport?.manufacturer ?? t('settings:device', { defaultValue: 'device' }) }),
       isResolved: autoStartMarkedDone,
       actionText: t('settings:step_autostart_btn', { defaultValue: 'Open Auto-Start Settings' }),
       onAction: async () => {
-        Linking.openSettings();
+        const opened = CellularTracker.openAttendanceReminderSettings('autoStart');
+        if (!opened) {
+          Linking.openSettings();
+        }
       },
       isManualCheck: true,
       onMarkDone: () => {
@@ -183,7 +197,7 @@ export function SetupWizardModal({
             <View style={{ flex: 1 }}>
               <Text style={styles.headerTitle}>{t('settings:wizard_title', { defaultValue: 'Permission Setup Wizard' })}</Text>
               <Text style={styles.headerSubtitle}>
-                {t('settings:wizard_subtitle', { defaultValue: `Configuring your ${healthReport.manufacturer} ${healthReport.model} device.` })}
+                {t('settings:wizard_subtitle', { defaultValue: `Configuring your ${healthReport?.manufacturer ?? ''} ${healthReport?.model ?? ''} device.` })}
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
@@ -197,7 +211,7 @@ export function SetupWizardModal({
               <Text style={styles.scoreLabel}>{t('settings:tracking_reliability', { defaultValue: 'Tracking & System Reliability' })}</Text>
               <Text style={[styles.scoreLevel, { color }]}>{level}</Text>
               <Text style={styles.scoreHint}>
-                {isEverythingResolved ? 'All permissions configured for seamless shifts!' : 'Complete the steps below for 100% reliability.'}
+                {isEverythingResolved ? t('settings:all_configured', { defaultValue: 'All permissions configured for seamless shifts!' }) : t('settings:complete_steps', { defaultValue: 'Complete the steps below for 100% reliability.' })}
               </Text>
             </View>
             <View style={[styles.scoreBadge, { backgroundColor: color }]}>

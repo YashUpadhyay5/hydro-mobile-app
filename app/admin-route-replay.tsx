@@ -5,15 +5,19 @@ import { LeafletMap } from '../components/LeafletMap';
 import api from '@/services/api';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from "@/constants/API";
+import { WORLD_REGION } from '@/constants/map';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 export default function AdminRouteReplayScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['tracking', 'common']);
   const { userId, date } = useLocalSearchParams();
-  const [footprints, setFootprints] = useState([]);
+  const [footprints, setFootprints] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -23,8 +27,9 @@ export default function AdminRouteReplayScreen() {
       const uId = userId || user?.id || 'employee';
       const fetchDate = date || new Date().toISOString().split('T')[0];
       const response = await api.get(`${API_BASE_URL}/footprints/history?userId=${uId}&date=${fetchDate}`);
-      if (response.data) {
-        setFootprints(response.data);
+      if (Array.isArray(response.data)) {
+        // History also contains GPS-off, cellular and rejected-fix records, which have no position to draw.
+        setFootprints(response.data.filter((f: any) => f.latitude != null && f.longitude != null));
       }
     } catch (error: any) {
       console.log('Error fetching history:', error.message);
@@ -56,8 +61,11 @@ export default function AdminRouteReplayScreen() {
   const allCoords = footprints.map((f: any) => ({ latitude: f.latitude, longitude: f.longitude }));
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-      <View className="flex-row items-center px-6 py-4.5 bg-white border-b border-border z-10">
+    <View className="flex-1 bg-background">
+      <View 
+        className="flex-row items-center px-6 bg-white border-b border-border z-10"
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <TouchableOpacity className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4" onPress={() => router.back()}>
           <IconSymbol name="chevron.left" color="#0f172a" size={24} />
         </TouchableOpacity>
@@ -80,24 +88,19 @@ export default function AdminRouteReplayScreen() {
               longitude: allCoords[0].longitude,
               latitudeDelta: 0.05,
               longitudeDelta: 0.05,
-            } : {
-              latitude: 28.6692,
-              longitude: 77.4538,
-              latitudeDelta: 0.1,
-              longitudeDelta: 0.1,
-            }}
+            } : WORLD_REGION}
             polylines={coordinates.length > 0 ? [{ points: coordinates, color: '#0052CC', weight: 4 }] : []}
             markers={[
               ...footprints.slice(0, currentIndex + 1).map((f: any, index) => ({
                 latitude: f.latitude,
                 longitude: f.longitude,
-                title: `Footprint ${index + 1}`,
+                title: t('tracking:footprint_n', { defaultValue: 'Footprint {{n}}', n: index + 1 }),
                 emoji: '👣'
               })),
               ...(currentFootprint ? [{
                 latitude: currentFootprint.latitude,
                 longitude: currentFootprint.longitude,
-                title: 'Current Location',
+                title: t('tracking:current_location', { defaultValue: 'Current Location' }),
                 emoji: '📍'
               }] : [])
             ]}
@@ -106,7 +109,7 @@ export default function AdminRouteReplayScreen() {
           {coordinates.length > 0 && (
             <View className="absolute bottom-8 self-center bg-white p-4 rounded-xl border border-border shadow-lg shadow-black/10 items-center w-4/5">
               <Text className="text-base font-black text-text-main mb-3">
-                {currentFootprint ? new Date(parseInt(currentFootprint.timestamp)).toLocaleTimeString() : 'N/A'}
+                {currentFootprint ? new Date(parseInt(currentFootprint.timestamp)).toLocaleTimeString(getDateLocale()) : 'N/A'}
               </Text>
               <TouchableOpacity 
                 className={`py-2.5 px-6 rounded-lg w-full items-center ${isPlaying ? 'bg-orange-50 border border-orange-200' : 'bg-primary'}`} 

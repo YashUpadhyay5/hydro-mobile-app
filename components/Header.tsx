@@ -19,6 +19,8 @@ import { useLanguage } from '@/src/hooks/useLanguage';
 import { LanguageModal } from '@/src/components/i18n/LanguageModal';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { resolveAvatarUrl } from '@/utils/avatar';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 export default function Header() {
   const { user, setUser } = useAuth();
@@ -33,23 +35,37 @@ export default function Header() {
   const [profileSheetVisible, setProfileSheetVisible] = useState(false);
   const [notifModalVisible, setNotifModalVisible] = useState(false);
   const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
-  const [notificationsList, setNotificationsList] = useState([
-    { id: '1', title: 'Welcome to Enterprise HRMS', body: 'Explore your shift logs, leave management, and team chat.', time: 'Today', read: false },
-  ]);
+  // Built at render (not stored in state) so the text follows the app language.
+  const notificationsList = [
+    {
+      id: '1',
+      title: t('nav:welcome_to_enterprise_hrms', { defaultValue: 'Welcome to Enterprise HRMS' }),
+      body: t('nav:welcome_body', { defaultValue: 'Explore your shift logs, leave management, and team chat.' }),
+      time: t('nav:today', { defaultValue: 'Today' }),
+    },
+  ];
 
   // Dynamic time-of-day greeting string
   const greetingText = useMemo(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) return 'Good Morning';
-    if (hour >= 12 && hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
-  }, []);
+    if (hour >= 5 && hour < 12) return t('nav:good_morning', { defaultValue: 'Good Morning' });
+    if (hour >= 12 && hour < 17) return t('nav:good_afternoon', { defaultValue: 'Good Afternoon' });
+    return t('nav:good_evening', { defaultValue: 'Good Evening' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLanguage]);
 
-  const formattedDate = new Date().toLocaleDateString('en-US', {
+  const formattedDate = new Date().toLocaleDateString(getDateLocale(), {
     weekday: 'short',
     month: 'short',
     day: 'numeric',
   });
+
+  const [imgError, setImgError] = useState(false);
+  const avatarUri = imgError ? null : resolveAvatarUrl(user?.avatar);
+
+  React.useEffect(() => {
+    setImgError(false);
+  }, [user?.avatar]);
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
@@ -71,12 +87,12 @@ export default function Header() {
 
     if (isCheckedIn) {
       Alert.alert(
-        'Active Shift Warning',
+        t('nav:active_shift_warning', { defaultValue: 'Active Shift Warning' }),
         'You have an active shift in progress. Logging out will clear your local session.\n\nDo you want to proceed with logout?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
           { 
-            text: 'Proceed', 
+            text: t('nav:proceed', { defaultValue: 'Proceed' }), 
             style: 'destructive',
             onPress: async () => {
               await logoutUser();
@@ -87,12 +103,12 @@ export default function Header() {
       );
     } else {
       Alert.alert(
-        'Confirm Logout',
-        'Are you sure you want to log out of your corporate account?',
+        t('nav:confirm_logout', { defaultValue: 'Confirm Logout' }),
+        t('nav:are_you_sure_you_want_to', { defaultValue: 'Are you sure you want to log out of your corporate account?' }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
           { 
-            text: 'Logout', 
+            text: t('nav:logout', { defaultValue: 'Logout' }), 
             style: 'destructive',
             onPress: async () => {
               await logoutUser();
@@ -106,12 +122,12 @@ export default function Header() {
 
 
   const menuItems = [
-    { key: 'profile', title: 'My Profile', icon: 'person-outline', action: () => { setProfileSheetVisible(false); router.push('/profile' as any); } },
-    { key: 'attendance', title: 'Shift Logs & History', icon: 'time-outline', action: () => { setProfileSheetVisible(false); router.push('/attendance-today' as any); } },
-    { key: 'leave', title: 'Leave Management', icon: 'calendar-outline', action: () => { setProfileSheetVisible(false); router.push('/leaves' as any); } },
-    { key: 'documents', title: 'Documents Vault', icon: 'folder-open-outline', action: () => { setProfileSheetVisible(false); router.push('/documents' as any); } },
-    { key: 'expenses', title: 'Expense Claims', icon: 'card-outline', action: () => { setProfileSheetVisible(false); router.push('/expenses' as any); } },
-    { key: 'language', title: `Language (${currentLanguage.toUpperCase()})`, icon: 'globe-outline', action: () => { setProfileSheetVisible(false); setLangModalVisible(true); } },
+    { key: 'profile', title: t('nav:my_profile', { defaultValue: 'My Profile' }), icon: 'person-outline', action: () => { setProfileSheetVisible(false); router.push('/profile' as any); } },
+    { key: 'attendance', title: t('nav:shift_logs_and_history', { defaultValue: 'Shift Logs & History' }), icon: 'time-outline', action: () => { setProfileSheetVisible(false); router.push('/attendance-today' as any); } },
+    { key: 'leave', title: t('nav:leave_management', { defaultValue: 'Leave Management' }), icon: 'calendar-outline', action: () => { setProfileSheetVisible(false); router.push('/leaves' as any); } },
+    { key: 'documents', title: t('nav:documents_vault', { defaultValue: 'Documents Vault' }), icon: 'folder-open-outline', action: () => { setProfileSheetVisible(false); router.push('/documents' as any); } },
+    { key: 'expenses', title: t('nav:expense_claims', { defaultValue: 'Expense Claims' }), icon: 'card-outline', action: () => { setProfileSheetVisible(false); router.push('/expenses' as any); } },
+    { key: 'language', title: `${t('nav:language', { defaultValue: 'Language' })} (${currentLanguage.toUpperCase()})`, icon: 'globe-outline', action: () => { setProfileSheetVisible(false); setLangModalVisible(true); } },
   ];
 
   return (
@@ -129,8 +145,12 @@ export default function Header() {
         activeOpacity={0.85}
       >
         <View style={styles.avatarCircle}>
-          {user?.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+          {avatarUri ? (
+            <Image 
+              source={{ uri: avatarUri }} 
+              style={styles.avatarImg} 
+              onError={() => setImgError(true)} 
+            />
           ) : (
             <Text style={styles.avatarText}>{initials}</Text>
           )}
@@ -142,10 +162,10 @@ export default function Header() {
             {greetingText} • {formattedDate}
           </Text>
           <Text style={[styles.userName, isDark && styles.textDark]} numberOfLines={1}>
-            {user?.name || 'Enterprise Employee'}
+            {user?.name || t('nav:enterprise_employee', { defaultValue: 'Enterprise Employee' })}
           </Text>
           <Text style={[styles.userRole, isDark && styles.textSecondaryDark]} numberOfLines={1}>
-            {user?.designation || 'Specialist'} • <Text style={{ color: isDark ? '#38BDF8' : '#0F172A', fontWeight: '700' }}>{user?.department || 'Operations'}</Text>
+            {user?.designation || '–'} • <Text style={{ color: isDark ? '#38BDF8' : '#0F172A', fontWeight: '700' }}>{user?.department || '–'}</Text>
           </Text>
         </View>
       </TouchableOpacity>
@@ -183,7 +203,7 @@ export default function Header() {
           <View style={[styles.sheetContainer, isDark && styles.sheetContainerDark, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}>
             <View style={styles.sheetHandle} />
             <View style={styles.notifHeaderRow}>
-              <Text style={[styles.notifTitle, isDark && styles.textDark]}>System Notifications</Text>
+              <Text style={[styles.notifTitle, isDark && styles.textDark]}>{t('nav:system_notifications', { defaultValue: 'System Notifications' })}</Text>
               <TouchableOpacity onPress={() => setNotifModalVisible(false)}>
                 <Ionicons name="close-circle-outline" size={24} color="#94a3b8" />
               </TouchableOpacity>
@@ -191,7 +211,7 @@ export default function Header() {
 
             <ScrollView style={{ maxHeight: 300, marginTop: 12 }}>
               {notificationsList.length === 0 ? (
-                <Text style={{ textAlign: 'center', color: '#94a3b8', marginVertical: 20 }}>No new notifications.</Text>
+                <Text style={{ textAlign: 'center', color: '#94a3b8', marginVertical: 20 }}>{t('nav:no_new_notifications', { defaultValue: 'No new notifications.' })}</Text>
               ) : (
                 notificationsList.map(n => (
                   <View key={n.id} style={[styles.notifCard, isDark && styles.cardDark]}>
@@ -231,22 +251,26 @@ export default function Header() {
             {/* Profile Info Card inside Sheet */}
             <View style={[styles.sheetProfileCard, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
               <View style={[styles.sheetAvatarLarge, isDark && { backgroundColor: '#334155' }]}>
-                {user?.avatar ? (
-                  <Image source={{ uri: user.avatar }} style={styles.sheetAvatarImg} />
+                {avatarUri ? (
+                  <Image 
+                    source={{ uri: avatarUri }} 
+                    style={styles.sheetAvatarImg} 
+                    onError={() => setImgError(true)} 
+                  />
                 ) : (
                   <Text style={styles.sheetAvatarText}>{initials}</Text>
                 )}
               </View>
 
               <View style={{ flex: 1, marginLeft: 14 }}>
-                <Text style={[styles.sheetName, isDark && styles.textDark]}>{user?.name || 'Enterprise Employee'}</Text>
-                <Text style={[styles.sheetRoleText, isDark && { color: '#94A3B8' }]}>{user?.designation || 'Specialist'} • {user?.department || 'Operations'}</Text>
+                <Text style={[styles.sheetName, isDark && styles.textDark]}>{user?.name || t('nav:enterprise_employee', { defaultValue: 'Enterprise Employee' })}</Text>
+                <Text style={[styles.sheetRoleText, isDark && { color: '#94A3B8' }]}>{user?.designation || '–'} • {user?.department || '–'}</Text>
                 <View style={styles.sheetBadgeRow}>
                   <View style={[styles.idBadge, isDark && { backgroundColor: '#0F172A' }]}>
                     <Text style={[styles.idBadgeText, isDark && { color: '#F8FAFC' }]}>ID: {user?.empCode || user?.employeeCode || user?.id || 'EMP-1002'}</Text>
                   </View>
                   <View style={[styles.idBadge, isDark ? { backgroundColor: '#064E3B' } : { backgroundColor: '#D1FAE5' }]}>
-                    <Text style={[styles.idBadgeText, isDark ? { color: '#34D399' } : { color: '#059669' }]}>Active Staff</Text>
+                    <Text style={[styles.idBadgeText, isDark ? { color: '#34D399' } : { color: '#059669' }]}>{t('nav:active_staff', { defaultValue: 'Active Staff' })}</Text>
                   </View>
                 </View>
               </View>
@@ -259,13 +283,13 @@ export default function Header() {
             {/* Detailed Metadata Grid */}
             <View style={styles.metaGrid}>
               <View style={[styles.metaBox, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
-                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Work Email</Text>
-                <Text style={[styles.metaVal, isDark && { color: '#F8FAFC' }]} numberOfLines={1}>{user?.email || 'employee@company.com'}</Text>
+                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>{t('nav:work_email', { defaultValue: 'Work Email' })}</Text>
+                <Text style={[styles.metaVal, isDark && { color: '#F8FAFC' }]} numberOfLines={1}>{user?.email || '–'}</Text>
               </View>
               <View style={[styles.metaBox, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
-                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>Joining Date</Text>
+                <Text style={[styles.metaLabel, isDark && { color: '#94A3B8' }]}>{t('nav:joining_date', { defaultValue: 'Joining Date' })}</Text>
                 <Text style={[styles.metaVal, isDark && { color: '#F8FAFC' }]}>
-                  {user?.joiningDate ? new Date(user.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2024'}
+                  {user?.joiningDate && !isNaN(new Date(user.joiningDate).getTime()) ? new Date(user.joiningDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '–'}
                 </Text>
               </View>
             </View>
@@ -295,7 +319,7 @@ export default function Header() {
               activeOpacity={0.85}
             >
               <Ionicons name="log-out-outline" size={20} color="#FFFFFF" />
-              <Text style={styles.fixedLogoutText}>Logout Account</Text>
+              <Text style={styles.fixedLogoutText}>{t('nav:logout_account', { defaultValue: 'Logout Account' })}</Text>
             </TouchableOpacity>
           </View>
         </View>

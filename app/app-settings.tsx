@@ -31,15 +31,31 @@ import {
   DEFAULT_APP_SETTINGS 
 } from '@/services/settingsService';
 import { syncOfflineData } from '@/services/syncService';
-
-const NOTIF_PREFS_KEY = '@hrms_notification_preferences_v1';
+import { NOTIFICATION_PREFS_KEY as NOTIF_PREFS_KEY, syncAttendanceReminders } from '@/services/AttendanceReminderService';
+import CellularTracker from '@/modules/cellular-tracker';
+import { useAuth } from '@/context/AuthContext';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 export default function AppSettingsScreen() {
+  const { t } = useTranslationSafe(['settings', 'common']);
+  // The English values are what gets stored; only the labels on the chips are translated.
+  const providerLabels: Record<string, string> = {
+    'GPS Preferred': t('settings:provider_gps_preferred', { defaultValue: 'GPS Preferred' }),
+    'GPS Only': t('settings:provider_gps_only', { defaultValue: 'GPS Only' }),
+    'GPS + Cellular': t('settings:provider_gps_cellular', { defaultValue: 'GPS + Cellular' }),
+  };
+  const intervalLabels: Record<string, string> = {
+    '10 Seconds': t('settings:interval_10s', { defaultValue: '10 Seconds' }),
+    '30 Seconds': t('settings:interval_30s', { defaultValue: '30 Seconds' }),
+    '60 Seconds': t('settings:interval_60s', { defaultValue: '60 Seconds' }),
+    '15 Minutes': t('settings:interval_15m', { defaultValue: '15 Minutes' }),
+  };
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { currentLanguage } = useLanguage();
+  const { user } = useAuth();
 
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [healthReport, setHealthReport] = useState<DeviceHealthReport | null>(null);
@@ -97,6 +113,8 @@ export default function AppSettingsScreen() {
     if (key === 'ann') setAnnouncementAlerts(val);
     if (key === 'vib') setHapticVibration(val);
     await AsyncStorage.setItem(NOTIF_PREFS_KEY, JSON.stringify(updated));
+    // The native reminders read this switch: turning it off cancels them, on re-arms them.
+    if (key === 'shift') syncAttendanceReminders(user).catch(() => {});
   };
 
   const handleProviderSelect = async (provider: string) => {
@@ -104,6 +122,14 @@ export default function AppSettingsScreen() {
     const updated = { ...settings, location_provider: provider };
     setSettings(updated);
     await AsyncStorage.setItem('@app_settings_v2', JSON.stringify(updated));
+    if (Platform.OS === 'android' && CellularTracker && CellularTracker.updateTrackingSettings) {
+      CellularTracker.updateTrackingSettings(
+        provider,
+        settings.gps_ratio_count ?? 1,
+        settings.cellular_ratio_count ?? 2,
+        selectedInterval
+      );
+    }
   };
 
   const handleIntervalSelect = async (interval: string) => {
@@ -111,15 +137,23 @@ export default function AppSettingsScreen() {
     const updated = { ...settings, location_update_interval: interval };
     setSettings(updated);
     await AsyncStorage.setItem('@app_settings_v2', JSON.stringify(updated));
+    if (Platform.OS === 'android' && CellularTracker && CellularTracker.updateTrackingSettings) {
+      CellularTracker.updateTrackingSettings(
+        selectedProvider,
+        settings.gps_ratio_count ?? 1,
+        settings.cellular_ratio_count ?? 2,
+        interval
+      );
+    }
   };
 
   const handleSyncTelemetry = async () => {
     setIsSyncing(true);
     try {
       await syncOfflineData();
-      Alert.alert('Sync Successful', 'Offline telemetry and attendance logs have been synchronized with corporate servers.');
+      Alert.alert(t('settings:sync_successful', { defaultValue: 'Sync Successful' }), t('settings:offline_telemetry_and_attendance_logs_have', { defaultValue: 'Offline telemetry and attendance logs have been synchronized with corporate servers.' }));
     } catch (e: any) {
-      Alert.alert('Sync Notice', 'Data synchronization completed.');
+      Alert.alert(t('settings:sync_notice', { defaultValue: 'Sync Notice' }), t('settings:data_synchronization_completed', { defaultValue: 'Data synchronization completed.' }));
     } finally {
       setIsSyncing(false);
     }
@@ -127,15 +161,15 @@ export default function AppSettingsScreen() {
 
   const handleClearCache = () => {
     Alert.alert(
-      'Clear Offline Cache',
-      'This will clear local temporary map and document cache. Are you sure?',
+      t('settings:clear_offline_cache', { defaultValue: 'Clear Offline Cache' }),
+      t('settings:this_will_clear_local_temporary_map', { defaultValue: 'This will clear local temporary map and document cache. Are you sure?' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
         {
-          text: 'Clear Cache',
+          text: t('settings:clear_cache', { defaultValue: 'Clear Cache' }),
           style: 'destructive',
           onPress: () => {
-            Alert.alert('Cache Cleared', 'Temporary app cache has been purged.');
+            Alert.alert(t('settings:cache_cleared', { defaultValue: 'Cache Cleared' }), t('settings:temporary_app_cache_has_been_purged', { defaultValue: 'Temporary app cache has been purged.' }));
           }
         }
       ]
@@ -155,7 +189,7 @@ export default function AppSettingsScreen() {
         >
           <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, isDark && styles.textWhite]}>App Settings</Text>
+        <Text style={[styles.navTitle, isDark && styles.textWhite]}>{t('settings:app_settings', { defaultValue: 'App Settings' })}</Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -165,19 +199,19 @@ export default function AppSettingsScreen() {
       >
         {/* Section 1: Permissions & Device Health Diagnostics */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>Permissions & Device Health</Text>
+          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>{t('settings:permissions_and_device_health', { defaultValue: 'Permissions & Device Health' })}</Text>
           <TouchableOpacity onPress={() => setIsWizardVisible(true)}>
-            <Text style={styles.sectionActionText}>Run Wizard →</Text>
+            <Text style={styles.sectionActionText}>{t('settings:run_wizard', { defaultValue: 'Run Wizard →' })}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.reliabilityScoreRow}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.scoreTitle}>Device Reliability Score</Text>
+              <Text style={styles.scoreTitle}>{t('settings:device_reliability_score', { defaultValue: 'Device Reliability Score' })}</Text>
               <Text style={[styles.scoreLevel, { color: reliability.color }]}>{reliability.level} ({reliability.score}%)</Text>
               <Text style={styles.scoreSub}>
-                {reliability.score === 100 ? 'All shift permissions fully active.' : 'Some permissions need attention.'}
+                {reliability.score === 100 ? t('settings:all_permissions_active', { defaultValue: 'All shift permissions fully active.' }) : t('settings:some_permissions_attention', { defaultValue: 'Some permissions need attention.' })}
               </Text>
             </View>
             <TouchableOpacity 
@@ -186,7 +220,7 @@ export default function AppSettingsScreen() {
               activeOpacity={0.85}
             >
               <Ionicons name="sparkles" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-              <Text style={styles.wizardBtnText}>Setup Wizard</Text>
+              <Text style={styles.wizardBtnText}>{t('settings:setup_wizard', { defaultValue: 'Setup Wizard' })}</Text>
             </TouchableOpacity>
           </View>
 
@@ -201,11 +235,11 @@ export default function AppSettingsScreen() {
                 color={healthReport?.isBackgroundGranted ? '#10B981' : '#F43F5E'} 
               />
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.permName, isDark && styles.textWhite]}>Location (All-Time)</Text>
+                <Text style={[styles.permName, isDark && styles.textWhite]}>{t('settings:location_all_time', { defaultValue: 'Location (All-Time)' })}</Text>
                 <Text style={styles.permDesc}>{healthReport?.isBackgroundGranted ? 'Granted' : 'Foreground Only / Missing'}</Text>
               </View>
               <Text style={[styles.statusChip, healthReport?.isBackgroundGranted ? styles.statusChipOk : styles.statusChipWarn]}>
-                {healthReport?.isBackgroundGranted ? 'OK' : 'Action'}
+                {healthReport?.isBackgroundGranted ? t('common:ok', { defaultValue: 'OK' }) : t('settings:chip_action', { defaultValue: 'Action' })}
               </Text>
             </View>
 
@@ -216,11 +250,11 @@ export default function AppSettingsScreen() {
                 color={!healthReport?.isBatteryOptimized ? '#10B981' : '#F59E0B'} 
               />
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.permName, isDark && styles.textWhite]}>Battery Saver Exemption</Text>
+                <Text style={[styles.permName, isDark && styles.textWhite]}>{t('settings:battery_saver_exemption', { defaultValue: 'Battery Saver Exemption' })}</Text>
                 <Text style={styles.permDesc}>{!healthReport?.isBatteryOptimized ? 'Exempted (Active)' : 'Restricted by OS'}</Text>
               </View>
               <Text style={[styles.statusChip, !healthReport?.isBatteryOptimized ? styles.statusChipOk : styles.statusChipWarn]}>
-                {!healthReport?.isBatteryOptimized ? 'OK' : 'Exempt'}
+                {!healthReport?.isBatteryOptimized ? t('common:ok', { defaultValue: 'OK' }) : t('settings:chip_exempt', { defaultValue: 'Exempt' })}
               </Text>
             </View>
 
@@ -231,11 +265,11 @@ export default function AppSettingsScreen() {
                 color={healthReport?.isNotificationGranted ? '#10B981' : '#F43F5E'} 
               />
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.permName, isDark && styles.textWhite]}>Push Notifications</Text>
+                <Text style={[styles.permName, isDark && styles.textWhite]}>{t('settings:notifications_perm', { defaultValue: 'Push Notifications' })}</Text>
                 <Text style={styles.permDesc}>{healthReport?.isNotificationGranted ? 'Allowed' : 'Disabled'}</Text>
               </View>
               <Text style={[styles.statusChip, healthReport?.isNotificationGranted ? styles.statusChipOk : styles.statusChipWarn]}>
-                {healthReport?.isNotificationGranted ? 'OK' : 'Enable'}
+                {healthReport?.isNotificationGranted ? t('common:ok', { defaultValue: 'OK' }) : t('settings:chip_enable', { defaultValue: 'Enable' })}
               </Text>
             </View>
 
@@ -246,11 +280,11 @@ export default function AppSettingsScreen() {
                 color={healthReport?.isCameraGranted ? '#10B981' : '#F43F5E'} 
               />
               <View style={{ flex: 1, marginLeft: 8 }}>
-                <Text style={[styles.permName, isDark && styles.textWhite]}>Camera Access</Text>
+                <Text style={[styles.permName, isDark && styles.textWhite]}>{t('settings:camera_access', { defaultValue: 'Camera Access' })}</Text>
                 <Text style={styles.permDesc}>{healthReport?.isCameraGranted ? 'Allowed (Selfie/Docs)' : 'Disabled'}</Text>
               </View>
               <Text style={[styles.statusChip, healthReport?.isCameraGranted ? styles.statusChipOk : styles.statusChipWarn]}>
-                {healthReport?.isCameraGranted ? 'OK' : 'Allow'}
+                {healthReport?.isCameraGranted ? t('common:ok', { defaultValue: 'OK' }) : t('settings:chip_allow', { defaultValue: 'Allow' })}
               </Text>
             </View>
           </View>
@@ -261,18 +295,18 @@ export default function AppSettingsScreen() {
             activeOpacity={0.8}
           >
             <Ionicons name="settings-outline" size={16} color="#2563EB" style={{ marginRight: 6 }} />
-            <Text style={styles.openSettingsText}>Open Android App Settings</Text>
+            <Text style={styles.openSettingsText}>{t('settings:open_android_app_settings', { defaultValue: 'Open Android App Settings' })}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Section 2: Shift Schedule & Punch Window */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Shift Schedule & Window</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('settings:shift_schedule_and_window', { defaultValue: 'Shift Schedule & Window' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Punch In Window</Text>
-              <Text style={styles.rowSub}>Allowed check-in time range</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:punch_in_window', { defaultValue: 'Punch In Window' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:allowed_check_in_time_range', { defaultValue: 'Allowed check-in time range' })}</Text>
             </View>
             <Text style={[styles.rowValueBadge, isDark && styles.valueBadgeDark]}>
               {settings.punch_in_start} - {settings.punch_in_end}
@@ -283,8 +317,8 @@ export default function AppSettingsScreen() {
 
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Standard Shift End</Text>
-              <Text style={styles.rowSub}>Expected clock out timestamp</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:standard_shift_end', { defaultValue: 'Standard Shift End' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:expected_clock_out_timestamp', { defaultValue: 'Expected clock out timestamp' })}</Text>
             </View>
             <Text style={[styles.rowValueBadge, isDark && styles.valueBadgeDark]}>
               {settings.punch_out_time}
@@ -295,8 +329,8 @@ export default function AppSettingsScreen() {
 
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Grace Period</Text>
-              <Text style={styles.rowSub}>Late punch grace allowance</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:grace_period', { defaultValue: 'Grace Period' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:late_punch_grace_allowance', { defaultValue: 'Late punch grace allowance' })}</Text>
             </View>
             <Text style={[styles.rowValueBadge, isDark && styles.valueBadgeDark]}>
               {settings.grace_minutes || 15} Mins
@@ -305,10 +339,10 @@ export default function AppSettingsScreen() {
         </View>
 
         {/* Section 3: Telemetry & Location Controls */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Telemetry & Location Provider</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('settings:telemetry_and_location_provider', { defaultValue: 'Telemetry & Location Provider' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
-          <Text style={styles.subHeadingLabel}>Location Provider Mode</Text>
+          <Text style={styles.subHeadingLabel}>{t('settings:location_provider_mode', { defaultValue: 'Location Provider Mode' })}</Text>
           <View style={styles.chipsRow}>
             {['GPS Preferred', 'GPS Only', 'GPS + Cellular'].map(mode => (
               <TouchableOpacity
@@ -318,15 +352,15 @@ export default function AppSettingsScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.providerChipText, selectedProvider === mode && styles.providerChipTextActive]}>
-                  {mode}
+                  {providerLabels[mode] ?? mode}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>Telemetry Refresh Interval</Text>
+          <Text style={[styles.subHeadingLabel, { marginTop: 14 }]}>{t('settings:telemetry_refresh_interval', { defaultValue: 'Telemetry Refresh Interval' })}</Text>
           <View style={styles.chipsRow}>
-            {['10 Seconds', '30 Seconds', '60 Seconds'].map(interval => (
+            {['10 Seconds', '30 Seconds', '60 Seconds', '15 Minutes'].map(interval => (
               <TouchableOpacity
                 key={interval}
                 style={[styles.providerChip, selectedInterval === interval && styles.providerChipActive]}
@@ -334,7 +368,7 @@ export default function AppSettingsScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.providerChipText, selectedInterval === interval && styles.providerChipTextActive]}>
-                  {interval}
+                  {intervalLabels[interval] ?? interval}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -342,13 +376,13 @@ export default function AppSettingsScreen() {
         </View>
 
         {/* Section 4: Notification Preferences */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Notification Preferences</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('settings:notification_preferences', { defaultValue: 'Notification Preferences' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Shift Clock In / Out Reminders</Text>
-              <Text style={styles.rowSub}>Receive reminders before shift starts and ends</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:shift_clock_in_out_reminders', { defaultValue: 'Shift Clock In / Out Reminders' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:receive_reminders_before_shift_starts_and', { defaultValue: 'Receive reminders before shift starts and ends' })}</Text>
             </View>
             <Switch
               value={shiftReminders}
@@ -361,8 +395,8 @@ export default function AppSettingsScreen() {
 
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Team & HR Messages</Text>
-              <Text style={styles.rowSub}>Instant push alerts for direct chat messages</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:team_and_hr_messages', { defaultValue: 'Team & HR Messages' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:instant_push_alerts_for_direct_chat', { defaultValue: 'Instant push alerts for direct chat messages' })}</Text>
             </View>
             <Switch
               value={chatAlerts}
@@ -375,8 +409,8 @@ export default function AppSettingsScreen() {
 
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Company Announcements</Text>
-              <Text style={styles.rowSub}>Broadcast notifications from management</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:company_announcements', { defaultValue: 'Company Announcements' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:broadcast_notifications_from_management', { defaultValue: 'Broadcast notifications from management' })}</Text>
             </View>
             <Switch
               value={announcementAlerts}
@@ -389,8 +423,8 @@ export default function AppSettingsScreen() {
 
           <View style={styles.switchRow}>
             <View style={{ flex: 1, marginRight: 10 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Haptic Touch & Vibration</Text>
-              <Text style={styles.rowSub}>Vibrate on attendance punch actions</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:haptic_touch_and_vibration', { defaultValue: 'Haptic Touch & Vibration' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:vibrate_on_attendance_punch_actions', { defaultValue: 'Vibrate on attendance punch actions' })}</Text>
             </View>
             <Switch
               value={hapticVibration}
@@ -401,7 +435,7 @@ export default function AppSettingsScreen() {
         </View>
 
         {/* Section 5: Language & Appearance */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Language & Display</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('settings:language_and_display', { defaultValue: 'Language & Display' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
           <TouchableOpacity 
@@ -410,8 +444,8 @@ export default function AppSettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>App Language</Text>
-              <Text style={styles.rowSub}>Select interface language</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:app_language', { defaultValue: 'App Language' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:select_interface_language', { defaultValue: 'Select interface language' })}</Text>
             </View>
             <View style={styles.langBadge}>
               <Ionicons name="globe-outline" size={15} color="#2563EB" style={{ marginRight: 4 }} />
@@ -421,7 +455,7 @@ export default function AppSettingsScreen() {
         </View>
 
         {/* Section 6: Storage, Sync & Privacy */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Data & Storage Management</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('settings:data_and_storage_management', { defaultValue: 'Data & Storage Management' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.actionItemRow}>
@@ -436,7 +470,7 @@ export default function AppSettingsScreen() {
               ) : (
                 <>
                   <Ionicons name="sync-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.syncBtnText}>Force Sync Telemetry Now</Text>
+                  <Text style={styles.syncBtnText}>{t('settings:force_sync_telemetry_now', { defaultValue: 'Force Sync Telemetry Now' })}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -447,7 +481,7 @@ export default function AppSettingsScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="trash-outline" size={16} color="#64748B" style={{ marginRight: 6 }} />
-              <Text style={styles.clearCacheText}>Clear Offline Cache</Text>
+              <Text style={styles.clearCacheText}>{t('settings:clear_offline_cache', { defaultValue: 'Clear Offline Cache' })}</Text>
             </TouchableOpacity>
           </View>
 
@@ -459,8 +493,22 @@ export default function AppSettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={{ flex: 1 }}>
-              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>Privacy Policy & Disclosures</Text>
-              <Text style={styles.rowSub}>View legal terms and permission disclosures</Text>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:privacy_policy_and_disclosures', { defaultValue: 'Privacy Policy & Disclosures' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:view_legal_terms_and_permission_disclosure', { defaultValue: 'View legal terms and permission disclosures' })}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity 
+            style={styles.settingRow}
+            onPress={() => router.push('/developer-diagnostics')}
+            activeOpacity={0.7}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowLabel, isDark && styles.textWhite]}>{t('settings:backend_server_and_diagnostics', { defaultValue: 'Backend Server & Diagnostics' })}</Text>
+              <Text style={styles.rowSub}>{t('settings:configure_static_ip_host_and_test', { defaultValue: 'Configure static IP host & test network latency' })}</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
           </TouchableOpacity>
@@ -469,7 +517,7 @@ export default function AppSettingsScreen() {
         {/* App Version Info Card */}
         <View style={styles.versionCard}>
           <Text style={styles.versionTitle}>Enterprise HRMS Mobile</Text>
-          <Text style={styles.versionSub}>Version 1.0.0 (Build 2026.08) • Production Grade</Text>
+          <Text style={styles.versionSub}>Version 1.4.1 (Build 2026.11) • Production Grade</Text>
           <Text style={styles.versionCopy}>© 2026 Corporate Workforce Management Systems</Text>
         </View>
 

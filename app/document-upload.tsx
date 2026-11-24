@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface Employee {
   id: string;
@@ -32,6 +33,7 @@ interface Employee {
 }
 
 export default function DocumentUploadScreen() {
+  const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const router = useRouter();
   const colorScheme = useColorScheme();
@@ -57,14 +59,32 @@ export default function DocumentUploadScreen() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  const employees: Employee[] = [
-    { id: 'emp1', name: 'Aman', email: 'employee1@hrms.com' },
-    { id: 'emp2', name: 'Yash', email: 'employee2@hrms.com' },
-    { id: 'emp3', name: 'Rahul', email: 'employee3@hrms.com' },
-    { id: 'emp4', name: 'Pooja', email: 'employee4@hrms.com' },
-    { id: 'emp5', name: 'Sneha', email: 'employee5@hrms.com' },
-    { id: 'HMPL02', name: 'Yash Material', email: 'yashhydromaterial@gmail.com' }
-  ];
+  // Recipients for an individually shared document come from the backend (admins only).
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    setEmployeesLoading(true);
+    setEmployeesError(null);
+    api.get('/employees')
+      .then((res) => {
+        if (cancelled) return;
+        const list = Array.isArray(res.data) ? res.data : [];
+        setEmployees(list.map((e: any) => ({ id: String(e.id), name: e.name || '', email: e.email || '' })));
+      })
+      .catch((err: any) => {
+        if (cancelled) return;
+        console.warn('[DocumentUpload] Could not load employees:', err.message);
+        setEmployeesError(t('documents:err_load_employees', { defaultValue: 'Could not load employees. Check your connection and reopen this screen.' }));
+      })
+      .finally(() => {
+        if (!cancelled) setEmployeesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [isAdmin]);
 
   // 1. Take photo using device camera
   const handleTakePhoto = async () => {
@@ -73,11 +93,11 @@ export default function DocumentUploadScreen() {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
           Alert.alert(
-            'Camera Permission Required',
-            'Please allow camera access in your phone settings to click and upload document photos.',
+            t('documents:camera_permission_required', { defaultValue: 'Camera Permission Required' }),
+            t('documents:please_allow_camera_access_in_your', { defaultValue: 'Please allow camera access in your phone settings to click and upload document photos.' }),
             [
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              { text: 'Cancel', style: 'cancel' }
+              { text: t('documents:open_settings', { defaultValue: 'Open Settings' }), onPress: () => Linking.openSettings() },
+              { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' }
             ]
           );
           return;
@@ -102,7 +122,7 @@ export default function DocumentUploadScreen() {
       }
     } catch (err: any) {
       console.error('Take photo error:', err.message);
-      Alert.alert(t('common:error', { defaultValue: 'Error' }), 'Failed to capture photo with camera.');
+      Alert.alert(t('common:error', { defaultValue: 'Error' }), t('documents:failed_to_capture_photo_with_camera', { defaultValue: 'Failed to capture photo with camera.' }));
     }
   };
 
@@ -113,11 +133,11 @@ export default function DocumentUploadScreen() {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
           Alert.alert(
-            'Gallery Permission Required',
-            'Please allow gallery access to select photos of your documents.',
+            t('documents:gallery_permission_required', { defaultValue: 'Gallery Permission Required' }),
+            t('documents:please_allow_gallery_access_to_select', { defaultValue: 'Please allow gallery access to select photos of your documents.' }),
             [
-              { text: 'Open Settings', onPress: () => Linking.openSettings() },
-              { text: 'Cancel', style: 'cancel' }
+              { text: t('documents:open_settings', { defaultValue: 'Open Settings' }), onPress: () => Linking.openSettings() },
+              { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' }
             ]
           );
           return;
@@ -143,7 +163,7 @@ export default function DocumentUploadScreen() {
       }
     } catch (err: any) {
       console.error('Pick gallery error:', err.message);
-      Alert.alert(t('common:error', { defaultValue: 'Error' }), 'Failed to select image from gallery.');
+      Alert.alert(t('common:error', { defaultValue: 'Error' }), t('documents:failed_to_select_image_from_gallery', { defaultValue: 'Failed to select image from gallery.' }));
     }
   };
 
@@ -293,7 +313,7 @@ export default function DocumentUploadScreen() {
       if (!response.ok) {
         const errText = await response.text().catch(() => '');
         console.warn(`[Document Upload] Server returned status ${response.status}:`, errText);
-        let parsedErr = t('documents:err_upload_failed', { defaultValue: 'Failed to upload document.' });
+        let parsedErr = t('documents:err_upload_failed_v2', { defaultValue: 'Failed to upload document.' });
         try {
           const parsed = JSON.parse(errText);
           parsedErr = parsed.error || parsed.message || parsed.detail || parsedErr;
@@ -312,7 +332,7 @@ export default function DocumentUploadScreen() {
       );
     } catch (error: any) {
       console.error('Document upload error:', error.message);
-      Alert.alert(t('common:error', { defaultValue: 'Upload Failed' }), error.message || t('documents:err_upload_failed', { defaultValue: 'Failed to upload document.' }));
+      Alert.alert(t('common:error', { defaultValue: 'Upload Failed' }), error.message || t('documents:err_upload_failed_v2', { defaultValue: 'Failed to upload document.' }));
     } finally {
       setUploading(false);
     }
@@ -328,38 +348,33 @@ export default function DocumentUploadScreen() {
   const pickerTextColor = isDark ? '#F8FAFC' : '#0F172A';
 
   return (
-    <ScrollView 
-      style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#FAFAFA' }}
-      contentContainerStyle={{ padding: 20, paddingBottom: 40, flexGrow: 1, justifyContent: 'center' }}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Top Header Bar with Back Button */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-        <TouchableOpacity
+    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-background'}`}>
+      {/* Fixed Top Header Bar with Safe Area Insets */}
+      <View 
+        className={`flex-row items-center px-5 border-b z-10 ${isDark ? 'bg-[#1E293B] border-slate-700' : 'bg-white border-border'}`}
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
+        <TouchableOpacity 
+          className={`w-10 h-10 rounded-full items-center justify-center border mr-3 ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`}
           onPress={() => router.back()}
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 20,
-            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-            borderWidth: 1,
-            borderColor: isDark ? '#334155' : '#E2E8F0',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginRight: 12,
-          }}
           activeOpacity={0.8}
         >
-          <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
+          <IconSymbol name="chevron.left" color={isDark ? '#F8FAFC' : '#1A1A1A'} size={22} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontWeight: '800', color: isDark ? '#F8FAFC' : '#0F172A' }}>
+
+        <Text className={`text-xl font-black tracking-tight ${isDark ? 'text-white' : 'text-text-main'}`}>
           {isAdmin ? t('documents:share_doc', { defaultValue: 'Share Document' }) : t('documents:upload_doc', { defaultValue: 'Upload Document' })}
         </Text>
       </View>
 
-      {/* Main Upload Card */}
-      <View
+      <ScrollView 
+        style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#FAFAFA' }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: Math.max(insets.bottom + 30, 40) }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Main Upload Card */}
+        <View
         style={{
           backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
           borderRadius: 20,
@@ -437,8 +452,8 @@ export default function DocumentUploadScreen() {
               >
                 <Picker.Item label="10th" value="10" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
                 <Picker.Item label="12th" value="12" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
-                <Picker.Item label="Graduation" value="Graduation" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
-                <Picker.Item label="Post Graduation" value="Post Graduation" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
+                <Picker.Item label={t('documents:graduation', { defaultValue: 'Graduation' })} value="Graduation" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
+                <Picker.Item label={t('documents:post_graduation', { defaultValue: 'Post Graduation' })} value="Post Graduation" color={pickerTextColor} style={{ backgroundColor: pickerBg }} />
               </Picker>
             </View>
           </View>
@@ -483,7 +498,7 @@ export default function DocumentUploadScreen() {
           >
             <Ionicons name="camera" size={22} color="#2563EB" style={{ marginBottom: 4 }} />
             <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F8FAFC' : '#1E40AF', textAlign: 'center' }}>
-              Take Photo
+              {t('documents:take_photo', { defaultValue: 'Take Photo' })}
             </Text>
           </TouchableOpacity>
 
@@ -505,7 +520,7 @@ export default function DocumentUploadScreen() {
           >
             <Ionicons name="images" size={22} color="#16A34A" style={{ marginBottom: 4 }} />
             <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F8FAFC' : '#15803D', textAlign: 'center' }}>
-              From Gallery
+              {t('documents:from_gallery', { defaultValue: 'From Gallery' })}
             </Text>
           </TouchableOpacity>
 
@@ -527,7 +542,7 @@ export default function DocumentUploadScreen() {
           >
             <Ionicons name="document-text" size={22} color="#9333EA" style={{ marginBottom: 4 }} />
             <Text style={{ fontSize: 12, fontWeight: '700', color: isDark ? '#F8FAFC' : '#6B21A8', textAlign: 'center' }}>
-              PDF / Storage
+              {t('documents:pdf_storage', { defaultValue: 'PDF / Storage' })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -587,7 +602,7 @@ export default function DocumentUploadScreen() {
                 {selectedFile.name}
               </Text>
               <Text style={{ fontSize: 11, color: '#10B981', marginTop: 2, fontWeight: '600' }}>
-                {selectedFile.size ? (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB' : 'Ready to upload'}
+                {selectedFile.size ? (selectedFile.size / (1024 * 1024)).toFixed(2) + ' MB' : t('documents:ready_to_upload', { defaultValue: 'Ready to upload' })}
               </Text>
             </View>
 
@@ -629,7 +644,7 @@ export default function DocumentUploadScreen() {
         )}
 
         <Text style={{ fontSize: 11, color: isDark ? '#64748B' : '#94A3B8', marginBottom: 16 }}>
-          ℹ️ Supported: Camera Photos, JPG, PNG, PDF, DOCX • Max size: 50MB
+          {t('documents:supported_camera_photos_jpg_png_pdf', { defaultValue: 'ℹ️ Supported: Camera Photos, JPG, PNG, PDF, DOCX • Max size: 50MB' })}
         </Text>
 
         {/* Admin Specific Sharing Options */}
@@ -745,7 +760,9 @@ export default function DocumentUploadScreen() {
                   ))}
                   {filteredEmployees.length === 0 && (
                     <Text style={{ padding: 16, fontSize: 13, color: isDark ? '#94A3B8' : '#64748B', textAlign: 'center' }}>
-                      {t('common:no_results', { defaultValue: 'No matching employees found.' })}
+                      {employeesLoading
+                        ? t('common:loading', { defaultValue: 'Loading...' })
+                        : employeesError || t('common:no_results', { defaultValue: 'No matching employees found.' })}
                     </Text>
                   )}
                 </ScrollView>
@@ -776,5 +793,6 @@ export default function DocumentUploadScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </View>
   );
 }

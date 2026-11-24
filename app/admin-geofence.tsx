@@ -12,15 +12,18 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import api from '@/services/api';
 import { API_BASE_URL } from '@/constants/API';
+import { WORLD_REGION } from '@/constants/map';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { LeafletMap } from '@/components/LeafletMap';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AdminGeofenceScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['tracking', 'common', 'permissions']);
   const [geofences, setGeofences] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +63,7 @@ export default function AdminGeofenceScreen() {
       setFetchingLocation(true);
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:location_required', { defaultValue: 'Location permissions are required to fetch current coordinates.' }));
+        Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:location_required_v2', { defaultValue: 'Location permissions are required to fetch current coordinates.' }));
         setFetchingLocation(false);
         return;
       }
@@ -155,7 +158,7 @@ export default function AdminGeofenceScreen() {
   const handleDeleteGeofence = async (id: number, gfName: string) => {
     Alert.alert(
       t('common:confirm', { defaultValue: 'Confirm Delete' }),
-      t('tracking:confirm_delete_gf', { defaultValue: `Are you sure you want to delete geofence "${gfName}"?` }),
+      t('tracking:confirm_delete_gf', { defaultValue: 'Are you sure you want to delete geofence "{{name}}"?', name: gfName }),
       [
         { text: t('common:cancel', { defaultValue: 'Cancel' }), style: "cancel" },
         { 
@@ -183,8 +186,11 @@ export default function AdminGeofenceScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-      <View className="flex-row items-center px-6 py-4.5 bg-white border-b border-border">
+    <View className="flex-1 bg-background">
+      <View 
+        className="flex-row items-center px-6 bg-white border-b border-border"
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <TouchableOpacity className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4" onPress={() => router.back()}>
           <IconSymbol name="chevron.left" color="#0f172a" size={24} />
         </TouchableOpacity>
@@ -213,12 +219,12 @@ export default function AdminGeofenceScreen() {
           {Platform.OS !== 'web' && (
             <View className="h-[200px] w-full rounded-xl overflow-hidden mb-4 border border-border">
               <LeafletMap
-                initialRegion={{
-                  latitude: geofences.length > 0 ? geofences[0].latitude : 28.6692,
-                  longitude: geofences.length > 0 ? geofences[0].longitude : 77.4538,
+                initialRegion={geofences.length > 0 ? {
+                  latitude: geofences[0].latitude,
+                  longitude: geofences[0].longitude,
                   latitudeDelta: 0.1,
                   longitudeDelta: 0.1,
-                }}
+                } : WORLD_REGION}
                 onMapPress={(coordinate) => {
                   setLatitude(String(coordinate.latitude));
                   setLongitude(String(coordinate.longitude));
@@ -232,7 +238,7 @@ export default function AdminGeofenceScreen() {
                 markers={latitude && longitude && !isNaN(Number(latitude)) && !isNaN(Number(longitude)) ? [{
                   latitude: Number(latitude),
                   longitude: Number(longitude),
-                  title: 'New Geofence Marker',
+                  title: t('tracking:new_geofence_marker', { defaultValue: 'New Geofence Marker' }),
                   color: 'red'
                 }] : []}
               />
@@ -242,7 +248,7 @@ export default function AdminGeofenceScreen() {
           {loading && geofences.length === 0 ? (
             <ActivityIndicator size="small" color="#0052CC" className="my-5" />
           ) : geofences.length === 0 ? (
-            <Text className="text-[13px] text-text-muted italic text-center my-4">{t('tracking:no_geofences', { defaultValue: 'No geofences created yet. Employees will default to Noida Office rules.' })}</Text>
+            <Text className="text-[13px] text-text-muted italic text-center my-4">{t('tracking:no_geofences', { defaultValue: 'No geofences created yet. Add one so office employees can clock in and out.' })}</Text>
           ) : (
             geofences.map((gf, index) => (
               <View key={gf.id || gf._id} className={`flex-row justify-between items-center py-3 ${index !== geofences.length - 1 ? 'border-b border-border' : ''}`}>
@@ -272,7 +278,7 @@ export default function AdminGeofenceScreen() {
             <Input
               value={name}
               onChangeText={setName}
-              placeholder="e.g. Noida Office / Delhi Site"
+              placeholder="e.g. Head Office"
             />
           </View>
 
@@ -281,7 +287,7 @@ export default function AdminGeofenceScreen() {
             <Input
               value={latitude}
               onChangeText={setLatitude}
-              placeholder="e.g. 28.6692"
+              placeholder="-90 to 90 (or tap the map)"
               keyboardType="numeric"
             />
           </View>
@@ -291,7 +297,7 @@ export default function AdminGeofenceScreen() {
             <Input
               value={longitude}
               onChangeText={setLongitude}
-              placeholder="e.g. 77.4538"
+              placeholder="-180 to 180 (or tap the map)"
               keyboardType="numeric"
             />
           </View>

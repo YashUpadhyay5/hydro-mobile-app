@@ -34,5 +34,20 @@
   "rejected": "नाकारले",
   "warning": "इशारा",
   "submit": "सादर करा",
-  "search_placeholder": "शोधा..."
+  "search_placeholder": "शोधा...",
+  "chat": "चॅट",
+  "update": "संपादित करा",
+  "timeout_msg": "60 सेकंदांनंतर विनंतीची वेळ संपली.",
+  "saving": "जतन करत आहे...",
+  "other": "इतर",
+  "no_results": "जुळणारे कर्मचारी सापडले नाहीत.",
+  "optional": "ऐच्छिक",
+  "copied": "कॉपी केले",
+  "active_now": "आता सक्रिय",
+  "active": "सक्रिय",
+  "coming_soon": "लवकरच येत आहे",
+  "got_it": "समजले",
+  "all_chats": "सर्व चॅट",
+  "unread": "न वाचलेले",
+  "all_depts": "सर्व विभाग"
 }

@@ -13,6 +13,10 @@ interface OfflineLocationDao {
     @Query("SELECT * FROM offline_locations WHERE (uploadStatus IN ('PENDING', 'FAILED', 'RETRYING') OR (uploadStatus = 'UPLOADING' AND updatedAt < :staleThresholdMs)) AND retryCount < 15 ORDER BY timestamp ASC LIMIT :limit")
     fun getPendingLocations(limit: Int = 50, staleThresholdMs: Long = System.currentTimeMillis() - 120000L): List<OfflineLocation>
 
+    // Records past the retry limit above are never selected again; this gives them a fresh budget.
+    @Query("UPDATE offline_locations SET retryCount = 0 WHERE retryCount >= 15")
+    fun resetExhaustedRetries(): Int
+
     @Query("UPDATE offline_locations SET uploadStatus = 'PENDING' WHERE uploadStatus = 'UPLOADING' AND updatedAt < :staleThresholdMs")
     fun resetStaleUploadingRecords(staleThresholdMs: Long = System.currentTimeMillis() - 120000L): Int
 
@@ -33,6 +37,9 @@ interface OfflineLocationDao {
 
     @Query("SELECT COUNT(*) FROM offline_locations WHERE uploadStatus = 'UPLOADED' AND timestamp >= :startOfDayMs")
     fun getUploadedCountToday(startOfDayMs: Long): Int
+
+    @Query("SELECT COUNT(*) FROM offline_locations WHERE uploadStatus = 'UPLOADING'")
+    fun getUploadingCount(): Int
 
     @Query("SELECT COUNT(*) FROM offline_locations WHERE uploadStatus = 'FAILED'")
     fun getFailedCount(): Int

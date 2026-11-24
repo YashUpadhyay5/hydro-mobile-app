@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 export interface Announcement {
   id: string;
@@ -30,6 +31,13 @@ interface AnnouncementsModalProps {
 }
 
 export function AnnouncementsModal({ visible, onClose, announcements }: AnnouncementsModalProps) {
+  const { t } = useTranslationSafe(['dashboard', 'common']);
+  const priorityLabels: Record<string, string> = {
+    ALL: t('dashboard:filter_all', { defaultValue: 'All' }),
+    URGENT: t('dashboard:priority_urgent', { defaultValue: 'Urgent' }),
+    POLICY: t('dashboard:priority_policy', { defaultValue: 'Policy' }),
+    GENERAL: t('dashboard:priority_general', { defaultValue: 'General' }),
+  };
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [searchQuery, setSearchQuery] = useState('');
@@ -67,8 +75,8 @@ export function AnnouncementsModal({ visible, onClose, announcements }: Announce
         {/* Top Header */}
         <View style={[styles.header, isDark && { backgroundColor: '#1E293B', borderBottomColor: '#334155' }]}>
           <View>
-            <Text style={[styles.headerTitle, isDark && { color: '#F8FAFC' }]}>Company Announcements</Text>
-            <Text style={[styles.headerSubtitle, isDark && { color: '#94A3B8' }]}>Official corporate notices & policy updates</Text>
+            <Text style={[styles.headerTitle, isDark && { color: '#F8FAFC' }]}>{t('dashboard:company_announcements', { defaultValue: 'Company Announcements' })}</Text>
+            <Text style={[styles.headerSubtitle, isDark && { color: '#94A3B8' }]}>{t('dashboard:official_corporate_notices_and_policy_upda', { defaultValue: 'Official corporate notices & policy updates' })}</Text>
           </View>
           <TouchableOpacity 
             style={[styles.closeBtn, isDark && { backgroundColor: '#334155' }]} 
@@ -84,7 +92,7 @@ export function AnnouncementsModal({ visible, onClose, announcements }: Announce
           <Ionicons name="search" size={18} color={isDark ? '#94A3B8' : '#64748B'} style={{ marginRight: 8 }} />
           <TextInput
             style={[styles.searchInput, isDark && { color: '#F8FAFC' }]}
-            placeholder="Search announcements..."
+            placeholder={t('dashboard:search_announcements', { defaultValue: 'Search announcements...' })}
             placeholderTextColor={isDark ? '#64748B' : '#94A3B8'}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -116,7 +124,7 @@ export function AnnouncementsModal({ visible, onClose, announcements }: Announce
                   isDark && { color: '#94A3B8' },
                   isActive && (isDark ? { color: '#0F172A', fontWeight: '800' } : styles.filterTextActive)
                 ]}>
-                  {pri.charAt(0) + pri.slice(1).toLowerCase()}
+                  {priorityLabels[pri]}
                 </Text>
               </TouchableOpacity>
             );
@@ -131,8 +139,8 @@ export function AnnouncementsModal({ visible, onClose, announcements }: Announce
           {filteredAnnouncements.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="megaphone-outline" size={48} color={isDark ? '#64748B' : '#94A3B8'} />
-              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>No Announcements Found</Text>
-              <Text style={[styles.emptyDesc, isDark && { color: '#94A3B8' }]}>No active company notices match your search or filter.</Text>
+              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>{t('dashboard:no_announcements_found', { defaultValue: 'No Announcements Found' })}</Text>
+              <Text style={[styles.emptyDesc, isDark && { color: '#94A3B8' }]}>{t('dashboard:no_active_company_notices_match_your', { defaultValue: 'No active company notices match your search or filter.' })}</Text>
             </View>
           ) : (
             filteredAnnouncements.map((item) => {
@@ -162,7 +170,7 @@ export function AnnouncementsModal({ visible, onClose, announcements }: Announce
                         styles.priorityText,
                         isUrgent ? (isDark ? { color: '#FB7185' } : styles.textHigh) : isPolicy ? (isDark ? { color: '#818CF8' } : styles.textPolicy) : (isDark ? { color: '#FBBF24' } : styles.textMedium)
                       ]}>
-                        {(item.priority || 'GENERAL').toUpperCase()}
+                        {priorityLabels[(item.priority || 'GENERAL').toUpperCase()] ?? (item.priority || 'GENERAL').toUpperCase()}
                       </Text>
                     </View>
 

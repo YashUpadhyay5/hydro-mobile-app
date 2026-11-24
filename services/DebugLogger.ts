@@ -1,5 +1,5 @@
 // services/DebugLogger.ts
-import { API_BASE_URL } from '@/constants/API';
+import { API_BASE_URL, isUsingConfiguredBackend } from '@/constants/API';
 
 export interface DebugLogEntry {
   timestamp: string;
@@ -52,7 +52,7 @@ export const checkStartupBackendUrl = () => {
   logDebug(
     'BACKEND_URL',
     'STARTUP_CHECK',
-    API_BASE_URL === 'https://hydro-hrms-app.onrender.com/api' ? 'SUCCESS' : 'WARNING',
+    isUsingConfiguredBackend() ? 'SUCCESS' : 'WARNING',
     undefined,
     `Active API Endpoint: ${API_BASE_URL}`
   );

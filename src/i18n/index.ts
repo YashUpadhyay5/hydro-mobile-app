@@ -31,6 +31,14 @@ export const SUPPORTED_LANGUAGES: SupportedLanguage[] = [
 
 export const DEFAULT_LANGUAGE_CODE = 'en';
 
+// Bhojpuri and Awadhi share the Devanagari script and most of their everyday vocabulary with Hindi, so until they
+// have their own translations they show Hindi (not English) wherever a string is missing.
+export const FALLBACK_LANGUAGES = {
+  bho: ['hi', DEFAULT_LANGUAGE_CODE],
+  awadhi: ['hi', DEFAULT_LANGUAGE_CODE],
+  default: [DEFAULT_LANGUAGE_CODE],
+};
+
 export const isLanguageSupported = (code: string): boolean => {
   if (!code) return false;
   const cleanCode = code.toLowerCase().split('-')[0].split('_')[0];
@@ -53,7 +61,7 @@ if (!i18n.isInitialized) {
   i18n.use(initReactI18next).init({
     resources,
     lng: DEFAULT_LANGUAGE_CODE,
-    fallbackLng: DEFAULT_LANGUAGE_CODE,
+    fallbackLng: FALLBACK_LANGUAGES,
     ns: NAMESPACES,
     defaultNS: DEFAULT_NAMESPACE,
     interpolation: {

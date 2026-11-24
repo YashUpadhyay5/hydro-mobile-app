@@ -16,12 +16,24 @@ export const syncOfflineData = async () => {
       if (Array.isArray(queue) && queue.length > 0) {
         logDebug('ATTENDANCE', 'ASYNC_QUEUE_SYNC_START', 'PENDING', undefined, `QueueCount: ${queue.length}`);
         console.log(`[SyncService] Syncing ${queue.length} offline attendance items...`);
+        const remainingQueue: any[] = [];
         for (const item of queue) {
-          await api.post('/attendance/sync', item);
+          try {
+            await api.post('/attendance', item);
+            logDebug('ATTENDANCE', 'ASYNC_ITEM_SYNC_SUCCESS', 'SUCCESS', item.userId, `Type: ${item.checkOut ? 'Clock-Out' : 'Clock-In'}`);
+          } catch (postErr: any) {
+            console.warn('[SyncService] Failed to sync item, retaining in offlineQueue:', postErr.message);
+            remainingQueue.push(item);
+          }
         }
-        await AsyncStorage.removeItem('offlineQueue');
-        logDebug('ATTENDANCE', 'ASYNC_QUEUE_SYNC_COMPLETE', 'SUCCESS', undefined, `Synced ${queue.length} items`);
-        console.log('[SyncService] Offline attendance synced successfully.');
+        if (remainingQueue.length > 0) {
+          await AsyncStorage.setItem('offlineQueue', JSON.stringify(remainingQueue));
+        } else {
+          await AsyncStorage.removeItem('offlineQueue');
+        }
+        const syncedCount = queue.length - remainingQueue.length;
+        logDebug('ATTENDANCE', 'ASYNC_QUEUE_SYNC_COMPLETE', 'SUCCESS', undefined, `Synced ${syncedCount} items`);
+        console.log(`[SyncService] Offline attendance sync complete: ${syncedCount}/${queue.length} items synced.`);
       }
     }
   } catch (e: any) {

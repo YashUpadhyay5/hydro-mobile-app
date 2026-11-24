@@ -1,6 +1,9 @@
 import "../global.css";
-import "@/src/i18n"; // Initialize i18next
+import i18n from "@/src/i18n"; // Initialize i18next
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ActivityProvider } from "@/context/ActivityContext";
+import { useActivityNotifications } from "@/hooks/useActivityNotifications";
+import { useRegularizationNotifications } from "@/hooks/useRegularizationNotifications";
 import { LanguageProvider } from "@/src/components/i18n/LanguageProvider";
 import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
 import React, { useEffect, Component, ReactNode } from "react";
@@ -12,6 +15,7 @@ import "../services/BackgroundLocationTask";
 import { syncOfflineData } from "@/services/syncService";
 import geotagPhotoSyncManager from "@/services/GeotagPhotoSyncManager";
 import offlinePhotoRepository from "@/services/OfflinePhotoRepository";
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 // Register global JS error handler to prevent unexpected app auto-close
 if (typeof (global as any).ErrorUtils !== 'undefined') {
@@ -60,12 +64,12 @@ class GlobalErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
       return (
         <View style={errorStyles.container}>
           <Text style={errorStyles.icon}>⚠️</Text>
-          <Text style={errorStyles.title}>Something went wrong</Text>
+          <Text style={errorStyles.title}>{i18n.t('nav:something_went_wrong', { defaultValue: 'Something went wrong' })}</Text>
           <Text style={errorStyles.message}>
-            The application recovered from an unexpected error. Please tap below to resume.
+            {i18n.t('nav:error_recovered_message', { defaultValue: 'The application recovered from an unexpected error. Please tap below to resume.' })}
           </Text>
           <TouchableOpacity style={errorStyles.button} onPress={this.handleRestart} activeOpacity={0.8}>
-            <Text style={errorStyles.buttonText}>Restart Application Screen</Text>
+            <Text style={errorStyles.buttonText}>{i18n.t('nav:restart_application_screen', { defaultValue: 'Restart Application Screen' })}</Text>
           </TouchableOpacity>
         </View>
       );
@@ -118,7 +122,9 @@ export default function RootLayout() {
     <GlobalErrorBoundary>
       <LanguageProvider>
         <AuthProvider>
-          <LayoutContent />
+          <ActivityProvider>
+            <LayoutContent />
+          </ActivityProvider>
         </AuthProvider>
       </LanguageProvider>
     </GlobalErrorBoundary>
@@ -127,11 +133,14 @@ export default function RootLayout() {
 
 
 function LayoutContent() {
+  const { t } = useTranslationSafe(['nav', 'common']);
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const segments = useSegments();
   const colorScheme = useColorScheme();
   const rootNavigationState = useRootNavigationState();
+  useActivityNotifications();
+  useRegularizationNotifications();
 
   useEffect(() => {
     // Initialize offline photo engine and continuous auto-sync engine across the entire app
@@ -235,7 +244,7 @@ function LayoutContent() {
         <Stack.Screen
           name="expense-create"
           options={{
-            title: 'Add Expense',
+            title: t('nav:add_expense', { defaultValue: 'Add Expense' }),
             presentation: 'card',
             headerStyle: { backgroundColor: isDark ? '#0F172A' : '#FFFFFF' },
             headerTintColor: isDark ? '#F8FAFC' : '#0F172A',
@@ -244,12 +253,32 @@ function LayoutContent() {
         <Stack.Screen
           name="leave-create"
           options={{
-            title: 'Apply Leave',
+            title: t('nav:apply_leave', { defaultValue: 'Apply Leave' }),
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="logs-and-shifts"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="activity-start"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="activity-extend"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="my-day"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="regularize"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="regularization-requests"
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -272,7 +301,7 @@ function LayoutContent() {
           name="modal"
           options={{
             presentation: 'modal',
-            title: 'Modal',
+            title: t('nav:modal', { defaultValue: 'Modal' }),
           }}
         />
       </Stack>

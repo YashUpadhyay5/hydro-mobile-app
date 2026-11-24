@@ -19,6 +19,11 @@ import * as Network from 'expo-network';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import api from '@/services/api';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+
+// Support contacts come from the build environment (EXPO_PUBLIC_*, see .env.example); a missing one hides its button.
+const SUPPORT_PHONE = process.env.EXPO_PUBLIC_SUPPORT_PHONE?.trim() || '';
+const SUPPORT_EMAIL = process.env.EXPO_PUBLIC_SUPPORT_EMAIL?.trim() || '';
 
 interface SupportTicket {
   id: string;
@@ -31,32 +36,6 @@ interface SupportTicket {
   resolution?: string;
 }
 
-const FAQ_ITEMS = [
-  {
-    q: 'How does shift check-in and clock-out work?',
-    a: 'Tap the "Clock In Now" button on your Home screen. The app verifies your location against office geofences or records your field shift. When your duty ends, tap "Clock Out Shift" to finalize your shift hours.'
-  },
-  {
-    q: 'Why does the app require "Allow all the time" location access?',
-    a: 'Enterprise HRMS verifies your presence inside office geofence boundaries and logs travel routes for field personnel while working. Telemetry is ONLY recorded during active shift hours while you are Clocked In. Tracking immediately halts when you Clock Out.'
-  },
-  {
-    q: 'Why is Battery Saver Optimization exemption needed?',
-    a: 'Modern Android operating systems aggressively kill background applications to save power. Excluding HRMS from battery optimization prevents the OS from stopping your active shift tracking midway.'
-  },
-  {
-    q: 'What should I do if my location shows "GPS Disabled"?',
-    a: 'Ensure your phone\'s Location/GPS switch is turned ON with "High Accuracy" enabled in Android settings. You can run the Permission Setup Wizard from App Settings to verify.'
-  },
-  {
-    q: 'How do I apply for annual leave or check holidays?',
-    a: 'Navigate to the "Leaves" tab to submit leave requests, view remaining balances, or tap "View Calendar" on the Home dashboard to see your location-specific holiday schedule.'
-  },
-  {
-    q: 'Who can I contact if my attendance record needs regularization?',
-    a: 'You can submit a ticket under the "Attendance & Shift" category on this Help Desk page or message your HR Administrator directly via the Chat tab.'
-  }
-];
 
 const CATEGORIES = [
   'Attendance & Shift',
@@ -68,6 +47,54 @@ const CATEGORIES = [
 ];
 
 export default function HelpSupportScreen() {
+  const { t } = useTranslationSafe(['settings', 'common']);
+  const faqItems = [
+    {
+      q: t('settings:faq_checkin_q', { defaultValue: 'How does shift check-in and clock-out work?' }),
+      a: t('settings:faq_checkin_a', { defaultValue: 'Tap the "Clock In Now" button on your Home screen. The app verifies your location against office geofences or records your field shift. When your duty ends, tap "Clock Out Shift" to finalize your shift hours.' }),
+    },
+    {
+      q: t('settings:faq_location_q', { defaultValue: 'Why does the app require "Allow all the time" location access?' }),
+      a: t('settings:faq_location_a', { defaultValue: 'Enterprise HRMS verifies your presence inside office geofence boundaries and logs travel routes for field personnel while working. Telemetry is ONLY recorded during active shift hours while you are Clocked In. Tracking immediately halts when you Clock Out.' }),
+    },
+    {
+      q: t('settings:faq_battery_q', { defaultValue: 'Why is Battery Saver Optimization exemption needed?' }),
+      a: t('settings:faq_battery_a', { defaultValue: 'Modern Android operating systems aggressively kill background applications to save power. Excluding HRMS from battery optimization prevents the OS from stopping your active shift tracking midway.' }),
+    },
+    {
+      q: t('settings:faq_gps_q', { defaultValue: 'What should I do if my location shows "GPS Disabled"?' }),
+      a: t('settings:faq_gps_a', { defaultValue: "Ensure your phone's Location/GPS switch is turned ON with \"High Accuracy\" enabled in Android settings. You can run the Permission Setup Wizard from App Settings to verify." }),
+    },
+    {
+      q: t('settings:faq_leave_q', { defaultValue: 'How do I apply for annual leave or check holidays?' }),
+      a: t('settings:faq_leave_a', { defaultValue: 'Navigate to the "Leaves" tab to submit leave requests, view remaining balances, or tap "View Calendar" on the Home dashboard to see your location-specific holiday schedule.' }),
+    },
+    {
+      q: t('settings:faq_regularize_q', { defaultValue: 'Who can I contact if my attendance record needs regularization?' }),
+      a: t('settings:faq_regularize_a', { defaultValue: 'You can submit a ticket under the "Attendance & Shift" category on this Help Desk page or message your HR Administrator directly via the Chat tab.' }),
+    },
+  ];
+
+  // The English values are what the server stores; only the labels shown on screen are translated.
+  const categoryLabels: Record<string, string> = {
+    'Attendance & Shift': t('settings:cat_attendance_shift', { defaultValue: 'Attendance & Shift' }),
+    'Location & Telemetry': t('settings:cat_location_telemetry', { defaultValue: 'Location & Telemetry' }),
+    'Leave & Payroll': t('settings:cat_leave_payroll', { defaultValue: 'Leave & Payroll' }),
+    'Expense Reimbursement': t('settings:cat_expense_reimbursement', { defaultValue: 'Expense Reimbursement' }),
+    'Technical Glitch': t('settings:cat_technical_glitch', { defaultValue: 'Technical Glitch' }),
+    'Other': t('settings:cat_other', { defaultValue: 'Other' }),
+  };
+  const priorityLabels: Record<string, string> = {
+    Normal: t('settings:priority_normal', { defaultValue: 'Normal' }),
+    High: t('settings:priority_high', { defaultValue: 'High' }),
+    Urgent: t('settings:priority_urgent', { defaultValue: 'Urgent' }),
+  };
+  const ticketStatusLabels: Record<string, string> = {
+    OPEN: t('settings:ticket_open', { defaultValue: 'OPEN' }),
+    RESOLVED: t('settings:ticket_resolved', { defaultValue: 'RESOLVED' }),
+    PENDING: t('settings:ticket_pending', { defaultValue: 'PENDING' }),
+  };
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user } = useAuth();
@@ -85,28 +112,7 @@ export default function HelpSupportScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Tickets list
-  const [tickets, setTickets] = useState<SupportTicket[]>([
-    {
-      id: 'TKT-1001',
-      category: 'Attendance & Shift',
-      priority: 'Normal',
-      subject: 'Shift regularization verification',
-      message: 'Verified geofence entry timestamp for yesterday shift.',
-      status: 'RESOLVED',
-      createdAt: '2 days ago',
-      resolution: 'Attendance logs synchronized with HR server.'
-    },
-    {
-      id: 'TKT-1002',
-      category: 'Location & Telemetry',
-      priority: 'Low',
-      subject: 'Background tracking on Android 14',
-      message: 'Confirmed battery optimization exemption configured.',
-      status: 'RESOLVED',
-      createdAt: 'Yesterday',
-      resolution: 'Device verified in background telemetry logs.'
-    }
-  ]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
 
   const [networkType, setNetworkType] = useState('Connected');
 
@@ -119,7 +125,7 @@ export default function HelpSupportScreen() {
     if (user?.id) {
       api.get('/support/tickets', { params: { employeeId: user.id } })
         .then(res => {
-          if (Array.isArray(res.data) && res.data.length > 0) {
+          if (Array.isArray(res.data)) {
             setTickets(res.data);
           }
         })
@@ -130,14 +136,14 @@ export default function HelpSupportScreen() {
   }, [user]);
 
   const handleCallHR = () => {
-    Linking.openURL('tel:+918001234567').catch(() => {
-      Alert.alert('Helpline', 'HR Support Helpline: +91 800 123 4567');
+    Linking.openURL(`tel:${SUPPORT_PHONE}`).catch(() => {
+      Alert.alert(t('settings:helpline', { defaultValue: 'Helpline' }), `${t('settings:hr_support_helpline', { defaultValue: 'HR Support Helpline' })}: ${SUPPORT_PHONE}`);
     });
   };
 
   const handleEmailHR = () => {
-    Linking.openURL('mailto:hr-support@company.com?subject=HRMS%20Support%20Inquiry').catch(() => {
-      Alert.alert('Email Support', 'HR Support Email: hr-support@company.com');
+    Linking.openURL(`mailto:${SUPPORT_EMAIL}?subject=HRMS%20Support%20Inquiry`).catch(() => {
+      Alert.alert(t('settings:email_support', { defaultValue: 'Email Support' }), `${t('settings:hr_support_email', { defaultValue: 'HR Support Email' })}: ${SUPPORT_EMAIL}`);
     });
   };
 
@@ -147,16 +153,21 @@ export default function HelpSupportScreen() {
 
   const handleSubmitTicket = async () => {
     if (!subject.trim() || !message.trim()) {
-      Alert.alert('Required Fields', 'Please provide both a subject and a description for your support ticket.');
+      Alert.alert(t('settings:required_fields', { defaultValue: 'Required Fields' }), t('settings:please_provide_both_a_subject_and', { defaultValue: 'Please provide both a subject and a description for your support ticket.' }));
+      return;
+    }
+
+    if (!user?.id) {
+      Alert.alert(t('settings:not_signed_in', { defaultValue: 'Not Signed In' }), t('settings:please_sign_in_again_before_raising', { defaultValue: 'Please sign in again before raising a support ticket.' }));
       return;
     }
 
     setIsSubmitting(true);
     try {
       const payload = {
-        employeeId: user?.id || 'emp1',
-        employeeName: user?.name || 'Employee',
-        employeeEmail: user?.email || '',
+        employeeId: user.id,
+        employeeName: user.name,
+        employeeEmail: user.email,
         category,
         priority,
         subject: subject.trim(),
@@ -165,41 +176,28 @@ export default function HelpSupportScreen() {
 
       const res = await api.post('/support/tickets', payload);
 
-      const createdTicket: SupportTicket = res.data?.ticket || {
-        id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-        category,
-        priority,
-        subject: subject.trim(),
-        message: message.trim(),
-        status: 'OPEN',
-        createdAt: 'Just now'
-      };
-
-      setTickets([createdTicket, ...tickets]);
+      // Only a ticket the server actually returned is shown; nothing is made up locally.
+      const createdTicket: SupportTicket | undefined = res.data?.ticket;
+      if (createdTicket) {
+        setTickets([createdTicket, ...tickets]);
+      }
       setSubject('');
       setMessage('');
       setActiveTab('TICKETS');
 
       Alert.alert(
-        'Ticket Submitted',
-        `Your support request (#${createdTicket.id}) has been logged. Our operations team will review it shortly.`
+        t('settings:ticket_submitted', { defaultValue: 'Ticket Submitted' }),
+        createdTicket
+          ? t('settings:ticket_logged_with_id', { defaultValue: 'Your support request (#{{id}}) has been logged. Our operations team will review it shortly.', id: createdTicket.id })
+          : t('settings:ticket_logged', { defaultValue: 'Your support request has been logged. Our operations team will review it shortly.' })
       );
     } catch (err: any) {
-      console.warn('[HelpDesk] Backend submit warning, creating local ticket:', err.message);
-      const fallbackTicket: SupportTicket = {
-        id: `TKT-${Math.floor(1000 + Math.random() * 9000)}`,
-        category,
-        priority,
-        subject: subject.trim(),
-        message: message.trim(),
-        status: 'OPEN',
-        createdAt: 'Just now'
-      };
-      setTickets([fallbackTicket, ...tickets]);
-      setSubject('');
-      setMessage('');
-      setActiveTab('TICKETS');
-      Alert.alert('Ticket Submitted', `Ticket #${fallbackTicket.id} logged successfully.`);
+      // The form is left as typed so the employee can retry.
+      console.warn('[HelpDesk] Ticket submit failed:', err.message);
+      Alert.alert(
+        t('settings:could_not_submit_ticket', { defaultValue: 'Could Not Submit Ticket' }),
+        err.response?.data?.error || t('settings:ticket_not_sent', { defaultValue: 'Your ticket was not sent. Check your connection and try again.' })
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -216,7 +214,7 @@ export default function HelpSupportScreen() {
         >
           <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, isDark && styles.textWhite]}>Help Desk & Support</Text>
+        <Text style={[styles.navTitle, isDark && styles.textWhite]}>{t('settings:help_desk_and_support', { defaultValue: 'Help Desk & Support' })}</Text>
         <View style={{ width: 38 }} />
       </View>
 
@@ -226,28 +224,32 @@ export default function HelpSupportScreen() {
       >
         {/* Quick Contact Action Bar */}
         <View style={styles.quickContactRow}>
-          <TouchableOpacity style={styles.contactCard} onPress={handleCallHR} activeOpacity={0.8}>
-            <View style={[styles.contactIconCircle, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="call" size={20} color="#2563EB" />
-            </View>
-            <Text style={styles.contactTitle}>Call HR</Text>
-            <Text style={styles.contactSub}>Helpline</Text>
-          </TouchableOpacity>
+          {!!SUPPORT_PHONE && (
+            <TouchableOpacity style={styles.contactCard} onPress={handleCallHR} activeOpacity={0.8}>
+              <View style={[styles.contactIconCircle, { backgroundColor: '#EFF6FF' }]}>
+                <Ionicons name="call" size={20} color="#2563EB" />
+              </View>
+              <Text style={styles.contactTitle}>{t('settings:call_hr', { defaultValue: 'Call HR' })}</Text>
+              <Text style={styles.contactSub}>{t('settings:helpline', { defaultValue: 'Helpline' })}</Text>
+            </TouchableOpacity>
+          )}
 
-          <TouchableOpacity style={styles.contactCard} onPress={handleEmailHR} activeOpacity={0.8}>
-            <View style={[styles.contactIconCircle, { backgroundColor: '#F0FDF4' }]}>
-              <Ionicons name="mail" size={20} color="#16A34A" />
-            </View>
-            <Text style={styles.contactTitle}>Email HR</Text>
-            <Text style={styles.contactSub}>Support Desk</Text>
-          </TouchableOpacity>
+          {!!SUPPORT_EMAIL && (
+            <TouchableOpacity style={styles.contactCard} onPress={handleEmailHR} activeOpacity={0.8}>
+              <View style={[styles.contactIconCircle, { backgroundColor: '#F0FDF4' }]}>
+                <Ionicons name="mail" size={20} color="#16A34A" />
+              </View>
+              <Text style={styles.contactTitle}>{t('settings:email_hr', { defaultValue: 'Email HR' })}</Text>
+              <Text style={styles.contactSub}>{t('settings:support_desk', { defaultValue: 'Support Desk' })}</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity style={styles.contactCard} onPress={handleChatHR} activeOpacity={0.8}>
             <View style={[styles.contactIconCircle, { backgroundColor: '#FAF5FF' }]}>
               <Ionicons name="chatbubbles" size={20} color="#9333EA" />
             </View>
-            <Text style={styles.contactTitle}>Live Chat</Text>
-            <Text style={styles.contactSub}>HR Admin</Text>
+            <Text style={styles.contactTitle}>{t('settings:live_chat', { defaultValue: 'Live Chat' })}</Text>
+            <Text style={styles.contactSub}>{t('settings:hr_admin', { defaultValue: 'HR Admin' })}</Text>
           </TouchableOpacity>
         </View>
 
@@ -259,7 +261,7 @@ export default function HelpSupportScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabPillText, activeTab === 'NEW_TICKET' && styles.tabPillTextActive]}>
-              Raise Ticket
+              {t('settings:raise_ticket', { defaultValue: 'Raise Ticket' })}
             </Text>
           </TouchableOpacity>
 
@@ -279,7 +281,7 @@ export default function HelpSupportScreen() {
             activeOpacity={0.8}
           >
             <Text style={[styles.tabPillText, activeTab === 'FAQ' && styles.tabPillTextActive]}>
-              FAQs
+              {t('settings:faqs', { defaultValue: 'FAQs' })}
             </Text>
           </TouchableOpacity>
         </View>
@@ -287,11 +289,11 @@ export default function HelpSupportScreen() {
         {/* TAB CONTENT: 1. Raise New Ticket */}
         {activeTab === 'NEW_TICKET' && (
           <View style={[styles.card, isDark && styles.cardDark]}>
-            <Text style={[styles.formHeading, isDark && styles.textWhite]}>Submit Support Ticket</Text>
-            <Text style={styles.formSub}>Our operations team typically responds within 2-4 business hours.</Text>
+            <Text style={[styles.formHeading, isDark && styles.textWhite]}>{t('settings:submit_support_ticket', { defaultValue: 'Submit Support Ticket' })}</Text>
+            <Text style={styles.formSub}>{t('settings:our_operations_team_typically_responds_wit', { defaultValue: 'Our operations team typically responds within 2-4 business hours.' })}</Text>
 
             {/* Category Selector */}
-            <Text style={styles.inputLabel}>Issue Category</Text>
+            <Text style={styles.inputLabel}>{t('settings:issue_category', { defaultValue: 'Issue Category' })}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               <View style={styles.categoryChipsRow}>
                 {CATEGORIES.map(cat => (
@@ -302,7 +304,7 @@ export default function HelpSupportScreen() {
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                      {cat}
+                      {categoryLabels[cat] ?? cat}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -310,7 +312,7 @@ export default function HelpSupportScreen() {
             </ScrollView>
 
             {/* Priority Selector */}
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Priority Level</Text>
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>{t('settings:priority_level', { defaultValue: 'Priority Level' })}</Text>
             <View style={styles.priorityRow}>
               {(['Normal', 'High', 'Urgent'] as const).map(p => (
                 <TouchableOpacity
@@ -320,27 +322,27 @@ export default function HelpSupportScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={[styles.priorityText, priority === p && styles.priorityTextActive]}>
-                    {p}
+                    {priorityLabels[p] ?? p}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {/* Subject Input */}
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Ticket Subject</Text>
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>{t('settings:ticket_subject', { defaultValue: 'Ticket Subject' })}</Text>
             <TextInput
               style={[styles.textInput, isDark && styles.textInputDark]}
-              placeholder="e.g. Geofence clock-in inquiry"
+              placeholder={t('settings:e_g_geofence_clock_in_inquiry', { defaultValue: 'e.g. Geofence clock-in inquiry' })}
               placeholderTextColor="#94A3B8"
               value={subject}
               onChangeText={setSubject}
             />
 
             {/* Detailed Description */}
-            <Text style={[styles.inputLabel, { marginTop: 14 }]}>Detailed Description</Text>
+            <Text style={[styles.inputLabel, { marginTop: 14 }]}>{t('settings:detailed_description', { defaultValue: 'Detailed Description' })}</Text>
             <TextInput
               style={[styles.textArea, isDark && styles.textInputDark]}
-              placeholder="Please describe your issue, shift date, and relevant details..."
+              placeholder={t('settings:please_describe_your_issue_shift_date', { defaultValue: 'Please describe your issue, shift date, and relevant details...' })}
               placeholderTextColor="#94A3B8"
               multiline
               numberOfLines={4}
@@ -361,7 +363,7 @@ export default function HelpSupportScreen() {
               ) : (
                 <>
                   <Ionicons name="paper-plane-outline" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.submitTicketBtnText}>Submit Support Request</Text>
+                  <Text style={styles.submitTicketBtnText}>{t('settings:submit_support_request', { defaultValue: 'Submit Support Request' })}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -374,8 +376,8 @@ export default function HelpSupportScreen() {
             {tickets.length === 0 ? (
               <View style={[styles.card, isDark && styles.cardDark, { alignItems: 'center', padding: 24 }]}>
                 <Ionicons name="ticket-outline" size={40} color="#94A3B8" />
-                <Text style={[styles.emptyTitle, isDark && styles.textWhite]}>No Support Tickets</Text>
-                <Text style={styles.emptySub}>You have not submitted any support tickets yet.</Text>
+                <Text style={[styles.emptyTitle, isDark && styles.textWhite]}>{t('settings:no_support_tickets', { defaultValue: 'No Support Tickets' })}</Text>
+                <Text style={styles.emptySub}>{t('settings:you_have_not_submitted_any_support', { defaultValue: 'You have not submitted any support tickets yet.' })}</Text>
               </View>
             ) : (
               tickets.map(ticket => {
@@ -396,7 +398,7 @@ export default function HelpSupportScreen() {
                           styles.statusBadgeText,
                           isResolved ? { color: '#059669' } : isOpen ? { color: '#2563EB' } : { color: '#D97706' }
                         ]}>
-                          {ticket.status}
+                          {ticketStatusLabels[String(ticket.status).toUpperCase()] ?? ticket.status}
                         </Text>
                       </View>
                     </View>
@@ -408,7 +410,7 @@ export default function HelpSupportScreen() {
                       <View style={styles.resolutionBox}>
                         <Ionicons name="checkmark-circle-outline" size={16} color="#059669" style={{ marginRight: 6 }} />
                         <Text style={styles.resolutionText}>
-                          <Text style={{ fontWeight: 'bold' }}>Resolution:</Text> {ticket.resolution}
+                          <Text style={{ fontWeight: 'bold' }}>{t('settings:resolution', { defaultValue: 'Resolution:' })}</Text> {ticket.resolution}
                         </Text>
                       </View>
                     )}
@@ -427,7 +429,7 @@ export default function HelpSupportScreen() {
         {/* TAB CONTENT: 3. FAQs Accordion */}
         {activeTab === 'FAQ' && (
           <View style={{ gap: 10 }}>
-            {FAQ_ITEMS.map((faq, idx) => {
+            {faqItems.map((faq, idx) => {
               const isExpanded = expandedFaqIndex === idx;
 
               return (
@@ -459,11 +461,11 @@ export default function HelpSupportScreen() {
         )}
 
         {/* System Diagnostics Card */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 24 }]}>System Diagnostics</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 24 }]}>{t('settings:system_diagnostics', { defaultValue: 'System Diagnostics' })}</Text>
         
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.diagRow}>
-            <Text style={styles.diagLabel}>Device Model</Text>
+            <Text style={styles.diagLabel}>{t('settings:device_model', { defaultValue: 'Device Model' })}</Text>
             <Text style={[styles.diagVal, isDark && styles.textWhite]}>
               {Device.manufacturer || 'Android'} {Device.modelName || 'Device'}
             </Text>
@@ -472,7 +474,7 @@ export default function HelpSupportScreen() {
           <View style={styles.divider} />
 
           <View style={styles.diagRow}>
-            <Text style={styles.diagLabel}>Operating System</Text>
+            <Text style={styles.diagLabel}>{t('settings:operating_system', { defaultValue: 'Operating System' })}</Text>
             <Text style={[styles.diagVal, isDark && styles.textWhite]}>
               {Platform.OS === 'android' ? `Android OS ${Device.osVersion || '14'}` : 'iOS'}
             </Text>
@@ -481,14 +483,14 @@ export default function HelpSupportScreen() {
           <View style={styles.divider} />
 
           <View style={styles.diagRow}>
-            <Text style={styles.diagLabel}>Network Status</Text>
-            <Text style={[styles.diagVal, { color: '#10B981' }]}>{networkType}</Text>
+            <Text style={styles.diagLabel}>{t('settings:network_status', { defaultValue: 'Network Status' })}</Text>
+            <Text style={[styles.diagVal, { color: '#10B981' }]}>{networkType === 'Connected' ? t('settings:network_connected', { defaultValue: 'Connected' }) : networkType === 'Offline' ? t('settings:network_offline', { defaultValue: 'Offline' }) : t('settings:network_online', { defaultValue: 'Internet Online (Active)' })}</Text>
           </View>
 
           <View style={styles.divider} />
 
           <View style={styles.diagRow}>
-            <Text style={styles.diagLabel}>App Build</Text>
+            <Text style={styles.diagLabel}>{t('settings:app_build', { defaultValue: 'App Build' })}</Text>
             <Text style={[styles.diagVal, isDark && styles.textWhite]}>v1.0.0 (Production)</Text>
           </View>
         </View>

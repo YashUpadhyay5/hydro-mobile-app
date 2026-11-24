@@ -31,7 +31,15 @@ data class OfflineLocation(
     var uploadStatus: String = UPLOAD_STATUS_PENDING, // PENDING, UPLOADING, UPLOADED, FAILED, RETRYING
     var retryCount: Int = 0,
     val createdAt: Long = System.currentTimeMillis(),
-    var updatedAt: Long = System.currentTimeMillis()
+    var updatedAt: Long = System.currentTimeMillis(),
+    // `timestamp` is when this record was captured; these describe the location fix itself.
+    val fixTimestamp: Long? = null,
+    val fixElapsedRealtimeNanos: Long? = null,
+    val fixAgeMs: Long? = null,
+    val speed: Float? = null,
+    val bearing: Float? = null,
+    val captureSource: String? = null,
+    val validationStatus: String? = null
 ) {
     companion object {
         const val UPLOAD_STATUS_PENDING = "PENDING"

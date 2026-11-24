@@ -8,6 +8,7 @@ import { Fonts } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 const { width } = Dimensions.get('window');
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -83,7 +84,7 @@ export default function AdminGallery() {
           <Text style={styles.btnText}>◀</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.dateDisplay} onPress={() => { if (Platform.OS !== 'web') setShowPicker(true); }}>
-          <Text style={styles.dateText}>{date.toLocaleDateString()}</Text>
+          <Text style={styles.dateText}>{date.toLocaleDateString(getDateLocale())}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.navBtn} onPress={() => { const d = new Date(date); d.setDate(d.getDate() + 1); setDate(d); }}>
           <Text style={styles.btnText}>▶</Text>
@@ -109,7 +110,7 @@ export default function AdminGallery() {
             <RefreshControl refreshing={loadingMedia} onRefresh={fetchMedia} colors={['#007AFF']} />
           }
           renderItem={({ item }) => {
-            const serverUrl = API_BASE_URL.replace('/api', '');
+            const serverUrl = API_BASE_URL.replace(/\/api\/?$/, '');
             
             let imgUrl = item.cloudinaryUrl;
             if (!imgUrl) {
@@ -117,7 +118,7 @@ export default function AdminGallery() {
                imgUrl = safeFilePath.startsWith('http') ? safeFilePath : `${serverUrl}/${safeFilePath.startsWith('/') ? safeFilePath.substring(1) : safeFilePath}`;
             }
 
-            const dateStr = new Date(Number(item.timestamp)).toLocaleDateString(undefined, {
+            const dateStr = new Date(Number(item.timestamp)).toLocaleDateString(getDateLocale(), {
               month: 'short',
               day: 'numeric',
               hour: '2-digit',
@@ -170,7 +171,7 @@ export default function AdminGallery() {
             <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
               <View style={styles.imageWrapper}>
                 <Image 
-                  source={{ uri: selectedPhoto.cloudinaryUrl || (selectedPhoto.filePath.replace(/\\/g, '/').startsWith('http') ? selectedPhoto.filePath.replace(/\\/g, '/') : `${API_BASE_URL.replace('/api', '')}/${selectedPhoto.filePath.replace(/\\/g, '/').startsWith('/') ? selectedPhoto.filePath.replace(/\\/g, '/').substring(1) : selectedPhoto.filePath.replace(/\\/g, '/')}`) }} 
+                  source={{ uri: selectedPhoto.cloudinaryUrl || (selectedPhoto.filePath.replace(/\\/g, '/').startsWith('http') ? selectedPhoto.filePath.replace(/\\/g, '/') : `${API_BASE_URL.replace(/\/api\/?$/, '')}/${selectedPhoto.filePath.replace(/\\/g, '/').startsWith('/') ? selectedPhoto.filePath.replace(/\\/g, '/').substring(1) : selectedPhoto.filePath.replace(/\\/g, '/')}`) }} 
                   style={styles.modalImage} 
                   contentFit="cover" 
                   cachePolicy="memory-disk"
@@ -180,7 +181,7 @@ export default function AdminGallery() {
                 <View style={styles.locationOverlay}>
                   <View style={styles.gpsBadge}>
                     <IconSymbol name="location.fill" size={10} color="#facc15" />
-                    <Text style={styles.gpsBadgeText}>GPS Map Camera</Text>
+                    <Text style={styles.gpsBadgeText}>{t('camera:gps_map_camera', { defaultValue: 'GPS Map Camera' })}</Text>
                   </View>
                   
                   <View style={styles.locationTextContainer}>
@@ -188,13 +189,13 @@ export default function AdminGallery() {
                       {selectedPhoto.address ? selectedPhoto.address.split(',')[0] : 'Unknown'} 🇮🇳
                     </Text>
                     <Text style={styles.locationAddressText}>
-                      {selectedPhoto.address || 'Address not available'}
+                      {selectedPhoto.address || t('camera:address_not_available', { defaultValue: 'Address not available' })}
                     </Text>
                     <Text style={styles.locationSubText}>
                       Lat {selectedPhoto.latitude?.toFixed(5)}° Long {selectedPhoto.longitude?.toFixed(5)}°
                     </Text>
                     <Text style={styles.locationSubText}>
-                      {new Date(Number(selectedPhoto.timestamp)).toLocaleString('en-US', {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'})}
+                      {new Date(Number(selectedPhoto.timestamp)).toLocaleString(getDateLocale(), {weekday: 'long', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit'})}
                     </Text>
                     <Text style={[styles.locationSubText, { color: '#facc15', marginTop: 2 }]}>
                       {t('camera:uploaded_by', { defaultValue: 'Uploaded by:' })} {selectedPhoto.userName}

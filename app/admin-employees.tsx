@@ -1,18 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform, ScrollView } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Modal, ActivityIndicator, Alert, Platform, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '@/services/api';
+import { getLeaveSummary, formatLeaveDays, toNumberOrNull } from '@/utils/leaveBalance';
 import { API_BASE_URL } from '@/constants/API';
+import { resolveAvatarUrl } from '@/utils/avatar';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AdminEmployeesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['employee', 'common']);
   const [employees, setEmployees] = useState<any[]>([]);
+  // Quick-pick chips are the locations employees already have, not a built-in city list.
+  const knownLocations = useMemo(
+    () => Array.from(new Set(employees.map((e) => String(e.location || '').trim()).filter(Boolean))).sort(),
+    [employees]
+  );
   const [loading, setLoading] = useState(true);
   
   const [modalVisible, setModalVisible] = useState(false);
@@ -21,11 +30,11 @@ export default function AdminEmployeesScreen() {
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('');
   const [designation, setDesignation] = useState<'OFFICE' | 'FIELD'>('OFFICE');
-  const [location, setLocation] = useState('Chennai');
-  const [allowedLeaves, setAllowedLeaves] = useState('15');
-  const [consumedLeaves, setConsumedLeaves] = useState('0');
+  const [location, setLocation] = useState('');
+  const [allowedLeaves, setAllowedLeaves] = useState('');
+  const [consumedLeaves, setConsumedLeaves] = useState('');
 
   const fetchEmployees = async () => {
     try {
@@ -53,11 +62,11 @@ export default function AdminEmployeesScreen() {
     setEditingId(null);
     setName('');
     setEmail('');
-    setPassword('password123');
+    setPassword('');
     setDesignation('OFFICE');
-    setLocation('Chennai');
-    setAllowedLeaves('15');
-    setConsumedLeaves('0');
+    setLocation('');
+    setAllowedLeaves('');
+    setConsumedLeaves('');
     setModalVisible(true);
   };
 
@@ -68,9 +77,9 @@ export default function AdminEmployeesScreen() {
     setEmail(emp.email);
     setPassword(emp.password);
     setDesignation(emp.designation || 'OFFICE');
-    setLocation(emp.location || 'Chennai');
-    setAllowedLeaves(String(emp.allowedLeaves ?? 15));
-    setConsumedLeaves(String(emp.consumedLeaves ?? 0));
+    setLocation(emp.location || '');
+    setAllowedLeaves(toNumberOrNull(emp.allowedLeaves) !== null ? String(emp.allowedLeaves) : '');
+    setConsumedLeaves(toNumberOrNull(emp.consumedLeaves) !== null ? String(emp.consumedLeaves) : '');
     setModalVisible(true);
   };
 
@@ -86,9 +95,10 @@ export default function AdminEmployeesScreen() {
         email: email.toLowerCase().trim(),
         password,
         designation,
-        location: location.trim() || 'Chennai',
-        allowedLeaves: Number(allowedLeaves) || 15,
-        consumedLeaves: Number(consumedLeaves) || 0
+        // Left out when blank so the server applies its own default instead of the app guessing one.
+        ...(location.trim() ? { location: location.trim() } : {}),
+        ...(toNumberOrNull(allowedLeaves) !== null ? { allowedLeaves: Number(allowedLeaves) } : {}),
+        ...(toNumberOrNull(consumedLeaves) !== null ? { consumedLeaves: Number(consumedLeaves) } : {}),
       };
 
       if (isEditing && editingId) {
@@ -118,7 +128,7 @@ export default function AdminEmployeesScreen() {
 
     Alert.alert(
       t('common:confirm', { defaultValue: 'Confirm Delete' }),
-      t('employee:confirm_delete_msg', { defaultValue: `Are you sure you want to delete employee "${empName}"? This action cannot be undone.` }),
+      t('employee:confirm_delete_msg', { defaultValue: 'Are you sure you want to delete employee "{{name}}"? This action cannot be undone.', name: empName }),
       [
         { text: t('common:cancel', { defaultValue: 'Cancel' }), style: "cancel" },
         { 
@@ -156,15 +166,22 @@ export default function AdminEmployeesScreen() {
     return (
       <Card className="mb-4">
         <View className="flex-row items-center mb-4">
-          <View className="w-11 h-11 rounded-xl bg-primary/10 items-center justify-center mr-3">
-            <Text className="text-primary font-black text-sm">
-              {getAvatarInitials(item.name)}
-            </Text>
+          <View className="w-11 h-11 rounded-xl bg-primary/10 items-center justify-center mr-3 overflow-hidden">
+            {resolveAvatarUrl(item.avatar) ? (
+              <Image 
+                source={{ uri: resolveAvatarUrl(item.avatar)! }} 
+                className="w-full h-full rounded-xl" 
+              />
+            ) : (
+              <Text className="text-primary font-black text-sm">
+                {getAvatarInitials(item.name)}
+              </Text>
+            )}
           </View>
           <View className="flex-1">
             <Text className="text-base font-black text-text-main tracking-tight">{item.name}</Text>
             <Text className="text-xs text-text-muted font-medium">{item.email}</Text>
-            <Text className="text-[11px] text-primary font-bold mt-0.5">ID: {item.empCode || item.employeeCode || item.id} • 📍 {item.location || 'Chennai'}</Text>
+            <Text className="text-[11px] text-primary font-bold mt-0.5">ID: {item.empCode || item.employeeCode || item.id} • 📍 {item.location || '–'}</Text>
           </View>
           <View className={`flex-row items-center py-1 px-2.5 rounded-full border ${item.designation === 'FIELD' ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'}`}>
             <View className={`w-1.5 h-1.5 rounded-full mr-1.5 ${item.designation === 'FIELD' ? 'bg-orange-500' : 'bg-blue-500'}`} />
@@ -176,18 +193,18 @@ export default function AdminEmployeesScreen() {
 
         <View className="flex-row items-center justify-around bg-background/50 py-3 rounded-xl border border-border mb-4">
           <View className="items-center flex-1">
-            <Text className="text-lg font-black text-text-main tracking-tight">{item.allowedLeaves ?? 15}</Text>
+            <Text className="text-lg font-black text-text-main tracking-tight">{formatLeaveDays(getLeaveSummary(item).totalEarned)}</Text>
             <Text className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-wider">{t('employee:allowed', { defaultValue: 'Allowed' })}</Text>
           </View>
           <View className="w-px h-6 bg-border" />
           <View className="items-center flex-1">
-            <Text className="text-lg font-black text-amber-500 tracking-tight">{item.consumedLeaves ?? 0}</Text>
+            <Text className="text-lg font-black text-amber-500 tracking-tight">{formatLeaveDays(getLeaveSummary(item).consumed)}</Text>
             <Text className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-wider">{t('employee:consumed', { defaultValue: 'Consumed' })}</Text>
           </View>
           <View className="w-px h-6 bg-border" />
           <View className="items-center flex-1">
             <Text className="text-lg font-black text-emerald-500 tracking-tight">
-              {Math.max(0, (item.allowedLeaves ?? 15) - (item.consumedLeaves ?? 0))}
+              {formatLeaveDays(getLeaveSummary(item).available)}
             </Text>
             <Text className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-wider">{t('employee:remaining', { defaultValue: 'Remaining' })}</Text>
           </View>
@@ -208,8 +225,11 @@ export default function AdminEmployeesScreen() {
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
-      <View className="flex-row items-center px-6 py-4.5 bg-white border-b border-border">
+    <View className="flex-1 bg-background">
+      <View 
+        className="flex-row items-center px-6 bg-white border-b border-border"
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <TouchableOpacity className="w-10 h-10 rounded-xl bg-background items-center justify-center mr-4" onPress={() => router.back()}>
           <IconSymbol name="chevron.left" color="#0f172a" size={24} />
         </TouchableOpacity>
@@ -307,15 +327,15 @@ export default function AdminEmployeesScreen() {
                 </TouchableOpacity>
               </View>
 
-              <Text className="text-[11px] font-black text-text-secondary mb-1.5 uppercase tracking-wider">Assigned Location (Holiday Calendar)</Text>
+              <Text className="text-[11px] font-black text-text-secondary mb-1.5 uppercase tracking-wider">{t('employee:assigned_location_holiday_calendar', { defaultValue: 'Assigned Location (Holiday Calendar)' })}</Text>
               <Input 
                 className="mb-2"
                 value={location} 
                 onChangeText={setLocation} 
-                placeholder="e.g. Chennai, Noida, Mumbai, Delhi / NCR" 
+                placeholder={t('employee:type_a_location_or_pick_an', { defaultValue: 'Type a location or pick an existing one' })} 
               />
               <View className="flex-row flex-wrap gap-1.5 mb-4.5">
-                {['Chennai', 'Noida', 'Mumbai', 'Delhi / NCR', 'Bengaluru'].map((loc) => (
+                {knownLocations.map((loc) => (
                   <TouchableOpacity
                     key={loc}
                     onPress={() => setLocation(loc)}

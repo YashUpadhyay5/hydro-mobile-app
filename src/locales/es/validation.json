@@ -1,0 +1,13 @@
+{
+  "requiredField": "Campo obligatorio",
+  "invalidEmail": "Correo electrónico no válido",
+  "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+  "passwordMismatch": "Las contraseñas no coinciden",
+  "loginFailed": "Error de inicio de sesión",
+  "networkError": "Error de red",
+  "gpsDisabled": "GPS desactivado",
+  "locationPermissionRequired": "Se requiere permiso de ubicación",
+  "noInternet": "Sin conexión a internet",
+  "serverError": "Error del servidor",
+  "somethingWentWrong": "Algo salió mal"
+}

@@ -1,0 +1,73 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Attendance reminders open a full-screen reminder over the lock screen when the user allows it.
+       Android 14+ grants this by default only to calling/alarm apps (Play requires a Console
+       declaration); otherwise the reminder falls back to a heads-up notification. -->
+  <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+  <application>
+    <!-- Background Location Tracking Foreground Service (Android 14+ foregroundServiceType) -->
+    <service
+      android:name="cellular.tracker.LocationTrackingService"
+      android:foregroundServiceType="location"
+      android:exported="false" />
+
+    <!-- Resumes tracking for a clocked-in user after a reboot or an app update mid-shift. -->
+    <receiver
+      android:name="cellular.tracker.LocationTrackingRestartReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- Attendance reminders: the app's own alarm and notification-action broadcasts. -->
+    <receiver
+      android:name="cellular.tracker.reminders.ReminderReceiver"
+      android:exported="false" />
+
+    <!-- Re-arms attendance reminders after reboot, app update, clock/timezone change and
+         exact-alarm permission changes. Ignores any other action. -->
+    <receiver
+      android:name="cellular.tracker.reminders.ReminderSystemReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+      </intent-filter>
+    </receiver>
+
+    <!-- Day Activities: the "time is up" alarm and its notification's Silence button. -->
+    <receiver
+      android:name="cellular.tracker.activities.ActivityAlarmReceiver"
+      android:exported="false" />
+
+    <!-- Puts the activity alarm back after reboot, app update, clock/timezone change. Ignores any other action. -->
+    <receiver
+      android:name="cellular.tracker.activities.ActivityAlarmSystemReceiver"
+      android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.BOOT_COMPLETED" />
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        <action android:name="android.intent.action.TIME_SET" />
+        <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+        <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+      </intent-filter>
+    </receiver>
+
+    <activity
+      android:name="cellular.tracker.reminders.ReminderActivity"
+      android:exported="false"
+      android:excludeFromRecents="true"
+      android:launchMode="singleTop"
+      android:taskAffinity=""
+      android:showWhenLocked="true"
+      android:turnScreenOn="true"
+      android:screenOrientation="portrait"
+      android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+  </application>
+</manifest>

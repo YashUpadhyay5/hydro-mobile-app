@@ -3,8 +3,12 @@ import { getSecureItem, setSecureItem, deleteSecureItem } from '@/utils/storage'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushNotificationsAsync } from '@/services/NotificationService';
 import api from '@/services/api';
-import { API_BASE_URL } from '@/constants/API';
+import { API_BASE_URL, apiBaseUrlReady } from '@/constants/API';
 import { fetchAppSettings } from '@/services/settingsService';
+import { syncAttendanceReminders, disableAttendanceReminders } from '@/services/AttendanceReminderService';
+import { AppState, Platform } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { mergeLeaveFields } from '@/utils/leaveBalance';
 
 const AuthContext = createContext<any>(null);
 
@@ -43,8 +47,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             phoneNo: userPhone,
             emergencyContactName: fresh.emergencyContactName || prev?.emergencyContactName,
             emergencyContactPhone: fresh.emergencyContactPhone || prev?.emergencyContactPhone,
-            allowedLeaves: fresh.allowedLeaves !== undefined ? fresh.allowedLeaves : prev?.allowedLeaves,
-            consumedLeaves: fresh.consumedLeaves !== undefined ? fresh.consumedLeaves : prev?.consumedLeaves,
+            // Leave figures: when the server sends availableLeaves they replace the login-time ones
+            // entirely (those go stale after an approval); see utils/leaveBalance.ts.
+            ...mergeLeaveFields(prev, fresh),
           };
           setSecureItem('userProfile', JSON.stringify(updated)).catch(() => {});
           return updated;
@@ -60,10 +65,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // Ensure a saved custom backend URL is loaded before any request fires,
+        // otherwise this can race initApiBaseUrl()'s AsyncStorage read and hit
+        // the hardcoded default host on cold start.
+        await apiBaseUrlReady;
+
+        // Mark first launch without clearing credentials.
+        // SecureStore is already empty on a genuine fresh install, so there
+        // is no need to wipe it here. Deleting the token when hasLaunched is
+        // absent caused forced re-login whenever AsyncStorage was cleared
+        // (app reinstall, data wipe, emulator reset) while SecureStore still
+        // held a valid session.
         const hasLaunched = await AsyncStorage.getItem('hasLaunched');
         if (!hasLaunched) {
-          await deleteSecureItem('userToken');
-          await deleteSecureItem('userProfile');
           await AsyncStorage.setItem('hasLaunched', 'true');
         }
 
@@ -119,8 +133,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } catch (err) {
         console.warn("Silent ignore: Push registration wrapper error:", err);
       }
+      // FCM can rotate the device token at any time: send the new one so pushes keep reaching this phone.
+      if (Platform.OS !== 'web') {
+        const refreshSub = Notifications.addPushTokenListener(({ data }) => {
+          if (typeof data !== 'string' || !data) return;
+          api.post('/employees/fcm-token', { token: data })
+            .then(() => console.log('Saved refreshed push token to backend'))
+            .catch((e: any) => console.warn('Failed to save refreshed push token:', e?.message));
+        });
+        return () => refreshSub.remove();
+      }
     }
   }, [user?.id]);
+
+  // Native clock-in/out reminders: synced on sign-in/cold start (after fresh shift settings), refreshed when
+  // the app returns to the foreground (new holidays/leave), and switched off on sign-out.
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user?.id) {
+      disableAttendanceReminders();
+      return;
+    }
+    const sync = () => fetchAppSettings().catch(() => null).finally(() => {
+      syncAttendanceReminders(user).catch((err) => console.warn('[AuthContext] Reminder sync warning:', err?.message));
+    });
+    sync();
+    let lastSync = Date.now();
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next === 'active' && Date.now() - lastSync > 60 * 60 * 1000) {
+        lastSync = Date.now();
+        sync();
+      }
+    });
+    return () => subscription.remove();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-sync on identity/token changes, not every profile refresh
+  }, [isLoading, user?.id, user?.empCode, user?.token]);
 
   return (
     <AuthContext.Provider value={{ user, setUser, isLoading, refreshUserProfile }}>

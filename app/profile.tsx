@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,12 +19,19 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { logoutUser } from '@/services/authService';
+import { getLeaveSummary, formatLeaveDays } from '@/utils/leaveBalance';
+import { getCachedAppSettings } from '@/services/settingsService';
 import { PrivacyPolicyConsentModal } from '@/components/PrivacyPolicyConsentModal';
 import useAttendance from '@/hooks/useAttendance';
 import api from '@/services/api';
+import { resolveAvatarUrl } from '@/utils/avatar';
+import { setSecureItem } from '@/utils/storage';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 
 export default function ProfileScreen() {
+  const { t } = useTranslationSafe(['employee', 'common']);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, setUser, refreshUserProfile } = useAuth();
@@ -46,19 +53,39 @@ export default function ProfileScreen() {
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
 
   // Editable Profile fields
-  const [phone, setPhone] = useState(user?.phone || '+91 98765 43210');
-  const [emergencyName, setEmergencyName] = useState(user?.emergencyContactName || 'Family / Guardian');
-  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyContactPhone || '+91 91234 56789');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [emergencyName, setEmergencyName] = useState(user?.emergencyContactName || '');
+  const [emergencyPhone, setEmergencyPhone] = useState(user?.emergencyContactPhone || '');
+  const [imageLoadError, setImageLoadError] = useState(false);
 
-  const avatarUri = user?.avatar || null;
+  // Safely resolve permanent URL (remote or optimistic preview)
+  const resolvedAvatar = resolveAvatarUrl(user?.avatar);
+  const avatarUri = imageLoadError ? null : resolvedAvatar;
+
+  // Reset image error state whenever user avatar changes
+  useEffect(() => {
+    setImageLoadError(false);
+  }, [user?.avatar]);
 
   const initials = user?.name
     ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase()
     : 'EM';
 
-  const allowedLeaves = user?.allowedLeaves !== undefined ? user.allowedLeaves : 15;
-  const consumedLeaves = user?.consumedLeaves !== undefined ? user.consumedLeaves : 0;
-  const remainingLeaves = Math.max(0, allowedLeaves - consumedLeaves);
+  // Leave figures for this login, as the server reports them (refreshed from GET /employees/:id each
+  // time this screen gains focus); "–" where the server sent none, never an invented default.
+  const leaveSummary = getLeaveSummary(user);
+
+  // Shift window from the server-configured settings (the same source the Home screen uses).
+  const [shiftWindow, setShiftWindow] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    getCachedAppSettings()
+      .then((s) => { if (alive && s?.punch_in_start && s?.punch_out_time) setShiftWindow(`${s.punch_in_start} - ${s.punch_out_time}`); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  // Shown only if the server sends one for this employee (no placeholder name).
+  const managerName: string | undefined = typeof user?.reportingManager === 'string' ? user.reportingManager : user?.reportingManager?.name;
 
   // Pick image from gallery
   const handlePickFromGallery = async () => {
@@ -66,7 +93,7 @@ export default function ProfileScreen() {
       setIsPhotoModalVisible(false);
       const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Please allow gallery access to upload your profile photo.');
+        Alert.alert(t('employee:permission_denied', { defaultValue: 'Permission Denied' }), t('employee:please_allow_gallery_access_to_upload', { defaultValue: 'Please allow gallery access to upload your profile photo.' }));
         return;
       }
 
@@ -82,7 +109,7 @@ export default function ProfileScreen() {
       }
     } catch (err: any) {
       console.warn('[Profile Photo Picker Error]:', err);
-      Alert.alert('Upload Error', 'Failed to pick photo from gallery.');
+      Alert.alert(t('employee:upload_error', { defaultValue: 'Upload Error' }), t('employee:failed_to_pick_photo_from_gallery', { defaultValue: 'Failed to pick photo from gallery.' }));
     }
   };
 
@@ -92,7 +119,7 @@ export default function ProfileScreen() {
       setIsPhotoModalVisible(false);
       const permission = await ImagePicker.requestCameraPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert('Permission Denied', 'Please allow camera access to take a profile photo.');
+        Alert.alert(t('employee:permission_denied', { defaultValue: 'Permission Denied' }), t('employee:please_allow_camera_access_to_take', { defaultValue: 'Please allow camera access to take a profile photo.' }));
         return;
       }
 
@@ -107,7 +134,7 @@ export default function ProfileScreen() {
       }
     } catch (err: any) {
       console.warn('[Profile Camera Error]:', err);
-      Alert.alert('Camera Error', 'Failed to capture photo.');
+      Alert.alert(t('employee:camera_error', { defaultValue: 'Camera Error' }), t('employee:failed_to_capture_photo', { defaultValue: 'Failed to capture photo.' }));
     }
   };
 
@@ -117,31 +144,112 @@ export default function ProfileScreen() {
     await saveProfileAvatar(null);
   };
 
-  // Persist avatar locally and on backend
+  // Persist avatar permanently to backend server and SecureStore
   const saveProfileAvatar = async (newUri: string | null) => {
     setIsUploadingPhoto(true);
+    setImageLoadError(false);
+
     try {
+      if (!newUri) {
+        // User requested removing avatar
+        if (user?.id) {
+          try {
+            await api.delete(`/employees/${user.id}/avatar`);
+          } catch (deleteErr) {
+            console.warn('[Profile] Remote DELETE avatar fallback to PUT:', deleteErr);
+            await api.put(`/employees/${user.id}`, { avatar: null });
+          }
+        }
+
+        const updatedUser = {
+          ...user,
+          avatar: null,
+        };
+        setUser(updatedUser);
+        await setSecureItem('userProfile', JSON.stringify(updatedUser));
+        if (refreshUserProfile && user?.id) {
+          refreshUserProfile(user.id).catch(() => {});
+        }
+
+        Alert.alert(t('employee:photo_removed', { defaultValue: 'Photo Removed' }), t('employee:your_profile_photo_has_been_removed', { defaultValue: 'Your profile photo has been removed and reset to initials.' }));
+        return;
+      }
+
+      // Optimistic local preview immediately
+      setUser((prev: any) => ({
+        ...(prev || {}),
+        avatar: newUri,
+      }));
+
+      let serverAvatarUrl = newUri;
+      let remoteSaveSucceeded = false;
+
       if (user?.id) {
         try {
-          await api.put(`/employees/${user.id}`, {
-            avatar: newUri || ''
+          const rawFilename = newUri.split('/').pop() || `avatar_${Date.now()}.jpg`;
+          const extMatch = /\.(\w+)$/.exec(rawFilename);
+          const ext = extMatch ? extMatch[1].toLowerCase() : 'jpg';
+          const mimeType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+          const cleanFilename = rawFilename.includes('.') ? rawFilename : `${rawFilename}.jpg`;
+
+          const formData = new FormData();
+          // @ts-ignore - React Native FormData expects { uri, name, type }
+          formData.append('avatar', {
+            uri: newUri,
+            name: cleanFilename,
+            type: mimeType,
           });
-        } catch (apiErr) {
-          console.warn('[Profile] Remote avatar update notice:', apiErr);
+
+          const uploadRes = await api.post(`/employees/${user.id}/avatar`, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+
+          if (uploadRes.data?.avatar) {
+            serverAvatarUrl = uploadRes.data.avatar;
+            remoteSaveSucceeded = true;
+          } else if (uploadRes.data?.employee?.avatar) {
+            serverAvatarUrl = uploadRes.data.employee.avatar;
+            remoteSaveSucceeded = true;
+          }
+        } catch (apiErr: any) {
+          console.warn('[Profile] Multipart avatar upload error, trying fallback PUT:', apiErr?.message);
+          try {
+            await api.put(`/employees/${user.id}`, {
+              avatar: newUri,
+            });
+            remoteSaveSucceeded = true;
+          } catch (fallbackErr) {
+            console.warn('[Profile] Fallback PUT also failed:', fallbackErr);
+          }
         }
       }
 
-      setUser({
+      const persistentUser = {
         ...user,
-        avatar: newUri || undefined
-      });
+        avatar: serverAvatarUrl,
+      };
+      setUser(persistentUser);
+      await setSecureItem('userProfile', JSON.stringify(persistentUser));
+      if (refreshUserProfile && user?.id) {
+        refreshUserProfile(user.id).catch(() => {});
+      }
 
-      Alert.alert(
-        'Photo Updated',
-        newUri ? 'Your profile photo has been attached and updated successfully!' : 'Profile photo has been removed.'
-      );
+      if (remoteSaveSucceeded) {
+        Alert.alert(
+          t('employee:photo_saved_permanently', { defaultValue: 'Photo Saved Permanently' }),
+          t('employee:your_profile_photo_has_been_uploaded', { defaultValue: 'Your profile photo has been uploaded and saved! It will now show everywhere across all devices and in team chats.' })
+        );
+      } else {
+        Alert.alert(
+          t('employee:saved_on_this_device_only', { defaultValue: 'Saved on This Device Only' }),
+          t('employee:your_profile_photo_could_not_be', { defaultValue: 'Your profile photo could not be uploaded to the server, so it will only show on this device until you try again with a connection.' })
+        );
+      }
     } catch (err: any) {
-      Alert.alert('Update Failed', err?.message || 'Could not update profile photo.');
+      console.error('[Profile Avatar Error]', err);
+      Alert.alert(t('employee:update_failed', { defaultValue: 'Update Failed' }), err?.message || 'Could not update profile photo.');
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -162,17 +270,19 @@ export default function ProfileScreen() {
         }
       }
 
-      setUser({
+      const updatedUser = {
         ...user,
         phone,
         emergencyContactName: emergencyName,
         emergencyContactPhone: emergencyPhone
-      });
+      };
+      setUser(updatedUser);
+      await setSecureItem('userProfile', JSON.stringify(updatedUser));
 
       setIsEditModalVisible(false);
-      Alert.alert('Profile Updated', 'Your profile details have been saved successfully.');
+      Alert.alert(t('employee:profile_updated', { defaultValue: 'Profile Updated' }), t('employee:your_profile_details_have_been_saved', { defaultValue: 'Your profile details have been saved successfully.' }));
     } catch (err: any) {
-      Alert.alert('Save Failed', err?.message || 'Could not update profile.');
+      Alert.alert(t('employee:save_failed_2', { defaultValue: 'Save Failed' }), err?.message || 'Could not update profile.');
     } finally {
       setIsSaving(false);
     }
@@ -183,12 +293,12 @@ export default function ProfileScreen() {
   const handleLogout = async () => {
     if (status === 'Checked In') {
       Alert.alert(
-        'Active Shift Warning',
+        t('employee:active_shift_warning', { defaultValue: 'Active Shift Warning' }),
         'You are currently Clocked In. Logging out will automatically Clock Out your active shift and end your working hours for today.\n\nDo you want to proceed?',
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
           {
-            text: 'Proceed',
+            text: t('employee:proceed', { defaultValue: 'Proceed' }),
             style: 'destructive',
             onPress: async () => {
               try {
@@ -204,12 +314,12 @@ export default function ProfileScreen() {
       );
     } else {
       Alert.alert(
-        'Logout Confirmation',
-        'Are you sure you want to log out of your corporate account?',
+        t('employee:logout_confirmation', { defaultValue: 'Logout Confirmation' }),
+        t('employee:are_you_sure_you_want_to', { defaultValue: 'Are you sure you want to log out of your corporate account?' }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
           {
-            text: 'Logout',
+            text: t('employee:logout', { defaultValue: 'Logout' }),
             style: 'destructive',
             onPress: async () => {
               await logoutUser();
@@ -233,14 +343,14 @@ export default function ProfileScreen() {
         >
           <Ionicons name="arrow-back" size={22} color={isDark ? '#F8FAFC' : '#0F172A'} />
         </TouchableOpacity>
-        <Text style={[styles.navTitle, isDark && styles.textWhite]}>My Profile</Text>
+        <Text style={[styles.navTitle, isDark && styles.textWhite]}>{t('employee:my_profile', { defaultValue: 'My Profile' })}</Text>
         <TouchableOpacity 
           style={[styles.editHeaderBtn, isDark && styles.editHeaderBtnDark]}
           onPress={() => setIsEditModalVisible(true)}
           activeOpacity={0.8}
         >
           <Ionicons name="create-outline" size={18} color="#2563EB" />
-          <Text style={styles.editHeaderText}>Edit</Text>
+          <Text style={styles.editHeaderText}>{t('common:edit', { defaultValue: 'Edit' })}</Text>
         </TouchableOpacity>
       </View>
 
@@ -258,7 +368,11 @@ export default function ProfileScreen() {
           >
             <View style={styles.avatarLargeCircle}>
               {avatarUri ? (
-                <Image source={{ uri: avatarUri }} style={styles.avatarLargeImg} />
+                <Image 
+                  source={{ uri: avatarUri }} 
+                  style={styles.avatarLargeImg} 
+                  onError={() => setImageLoadError(true)} 
+                />
               ) : (
                 <Text style={styles.avatarLargeText}>{initials}</Text>
               )}
@@ -276,23 +390,23 @@ export default function ProfileScreen() {
 
           <TouchableOpacity onPress={() => setIsPhotoModalVisible(true)} activeOpacity={0.7}>
             <Text style={styles.changePhotoPromptText}>
-              {avatarUri ? 'Change Profile Photo' : '📷 Attach Profile Photo'}
+              {avatarUri ? t('employee:change_profile_photo', { defaultValue: 'Change Profile Photo' }) : t('employee:attach_profile_photo', { defaultValue: '📷 Attach Profile Photo' })}
             </Text>
           </TouchableOpacity>
 
           <Text style={[styles.heroName, isDark && styles.textWhite]}>{user?.name || 'Enterprise Employee'}</Text>
           <Text style={styles.heroDesignation}>
-            {user?.designation || 'Specialist'} • <Text style={{ fontWeight: '700', color: isDark ? '#93C5FD' : '#2563EB' }}>{user?.department || 'Operations'}</Text>
+            {user?.designation || '–'} • <Text style={{ fontWeight: '700', color: isDark ? '#93C5FD' : '#2563EB' }}>{user?.department || '–'}</Text>
           </Text>
 
           <View style={styles.heroBadgeRow}>
             <View style={styles.badgeDark}>
               <Ionicons name="id-card-outline" size={13} color="#94A3B8" style={{ marginRight: 4 }} />
-              <Text style={styles.badgeDarkText}>ID: {user?.empCode || user?.employeeCode || user?.employeeId || user?.id || 'HMPL101'}</Text>
+              <Text style={styles.badgeDarkText}>ID: {user?.empCode || user?.employeeCode || user?.employeeId || user?.id || '–'}</Text>
             </View>
             <View style={styles.badgeActive}>
               <Ionicons name="shield-checkmark" size={13} color="#059669" style={{ marginRight: 4 }} />
-              <Text style={styles.badgeActiveText}>Active Staff</Text>
+              <Text style={styles.badgeActiveText}>{t('employee:active_staff', { defaultValue: 'Active Staff' })}</Text>
             </View>
             <View style={[styles.badgeDark, { backgroundColor: '#EFF6FF' }]}>
               <Text style={[styles.badgeDarkText, { color: '#2563EB' }]}>{user?.role || 'EMPLOYEE'}</Text>
@@ -302,9 +416,9 @@ export default function ProfileScreen() {
 
         {/* Section 1: Contact & Personal Details */}
         <View style={styles.sectionHeaderRow}>
-          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>Personal & Contact Info</Text>
+          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>{t('employee:personal_and_contact_info', { defaultValue: 'Personal & Contact Info' })}</Text>
           <TouchableOpacity onPress={() => setIsEditModalVisible(true)}>
-            <Text style={styles.sectionActionText}>Edit Info</Text>
+            <Text style={styles.sectionActionText}>{t('employee:edit_info', { defaultValue: 'Edit Info' })}</Text>
           </TouchableOpacity>
         </View>
 
@@ -314,7 +428,7 @@ export default function ProfileScreen() {
               <Ionicons name="id-card-outline" size={18} color="#6366F1" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Employee Code / ID</Text>
+              <Text style={styles.infoLabel}>{t('employee:employee_code_id', { defaultValue: 'Employee Code / ID' })}</Text>
               <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.empCode || user?.employeeCode || user?.employeeId || user?.id || 'N/A'}</Text>
             </View>
           </View>
@@ -326,8 +440,8 @@ export default function ProfileScreen() {
               <Ionicons name="mail-outline" size={18} color="#2563EB" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Work Email</Text>
-              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.email || 'employee@hrms.com'}</Text>
+              <Text style={styles.infoLabel}>{t('employee:work_email', { defaultValue: 'Work Email' })}</Text>
+              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.email || '–'}</Text>
             </View>
           </View>
 
@@ -338,7 +452,7 @@ export default function ProfileScreen() {
               <Ionicons name="call-outline" size={18} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Mobile Number</Text>
+              <Text style={styles.infoLabel}>{t('employee:mobile_number', { defaultValue: 'Mobile Number' })}</Text>
               <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.phoneNo || user?.phone || phone || '+91 98765 43210'}</Text>
             </View>
           </View>
@@ -350,7 +464,7 @@ export default function ProfileScreen() {
               <Ionicons name="heart-outline" size={18} color="#E11D48" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Emergency Contact</Text>
+              <Text style={styles.infoLabel}>{t('employee:emergency_contact', { defaultValue: 'Emergency Contact' })}</Text>
               <Text style={[styles.infoVal, isDark && styles.textWhite]}>{emergencyName} ({emergencyPhone})</Text>
             </View>
           </View>
@@ -362,8 +476,8 @@ export default function ProfileScreen() {
               <Ionicons name="location-outline" size={18} color="#D97706" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Office Base / Location</Text>
-              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.location || 'Noida HQ'}</Text>
+              <Text style={styles.infoLabel}>{t('employee:office_base_location', { defaultValue: 'Office Base / Location' })}</Text>
+              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.location || '–'}</Text>
             </View>
           </View>
 
@@ -374,16 +488,16 @@ export default function ProfileScreen() {
               <Ionicons name="calendar-outline" size={18} color="#9333EA" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Joining Date</Text>
+              <Text style={styles.infoLabel}>{t('employee:joiningDate', { defaultValue: 'Joining Date' })}</Text>
               <Text style={[styles.infoVal, isDark && styles.textWhite]}>
-                {user?.joiningDate ? new Date(user.joiningDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 15, 2024'}
+                {user?.joiningDate && !isNaN(new Date(user.joiningDate).getTime()) ? new Date(user.joiningDate).toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' }) : '–'}
               </Text>
             </View>
           </View>
         </View>
 
         {/* Section 2: Employment & Shift Configuration */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Employment & Work Shift</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('employee:employment_and_work_shift', { defaultValue: 'Employment & Work Shift' })}</Text>
         
         <View style={[styles.infoCard, isDark && styles.cardDark]}>
           <View style={styles.infoRow}>
@@ -391,8 +505,8 @@ export default function ProfileScreen() {
               <Ionicons name="time-outline" size={18} color="#2563EB" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Shift Schedule</Text>
-              <Text style={[styles.infoVal, isDark && styles.textWhite]}>General Shift (09:30 AM - 05:30 PM)</Text>
+              <Text style={styles.infoLabel}>{t('employee:shift_schedule', { defaultValue: 'Shift Schedule' })}</Text>
+              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{shiftWindow ? `General Shift (${shiftWindow})` : '–'}</Text>
             </View>
           </View>
 
@@ -403,49 +517,53 @@ export default function ProfileScreen() {
               <Ionicons name="briefcase-outline" size={18} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Work Mode Assigned</Text>
+              <Text style={styles.infoLabel}>{t('employee:work_mode_assigned', { defaultValue: 'Work Mode Assigned' })}</Text>
               <Text style={[styles.infoVal, isDark && styles.textWhite]}>{user?.designation === 'FIELD' ? 'Field Duty Specialist' : 'Office Shift / Hybrid'}</Text>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          {managerName ? (
+            <>
+              <View style={styles.divider} />
 
-          <View style={styles.infoRow}>
-            <View style={styles.iconCircle}>
-              <Ionicons name="people-outline" size={18} color="#4F46E5" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Reporting Manager</Text>
-              <Text style={[styles.infoVal, isDark && styles.textWhite]}>Operations Lead (HR Department)</Text>
-            </View>
-          </View>
+              <View style={styles.infoRow}>
+                <View style={styles.iconCircle}>
+                  <Ionicons name="people-outline" size={18} color="#4F46E5" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoLabel}>{t('employee:reporting_manager', { defaultValue: 'Reporting Manager' })}</Text>
+                  <Text style={[styles.infoVal, isDark && styles.textWhite]}>{managerName}</Text>
+                </View>
+              </View>
+            </>
+          ) : null}
         </View>
 
         {/* Section 3: Leave Entitlements */}
         <View style={[styles.sectionHeaderRow, { marginTop: 22 }]}>
-          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>Leave Entitlements</Text>
+          <Text style={[styles.sectionHeading, isDark && styles.textWhite]}>{t('employee:leave_entitlements', { defaultValue: 'Leave Entitlements' })}</Text>
           <TouchableOpacity onPress={() => router.push('/leaves' as any)}>
-            <Text style={styles.sectionActionText}>Manage Leaves →</Text>
+            <Text style={styles.sectionActionText}>{t('employee:manage_leaves', { defaultValue: 'Manage Leaves →' })}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.leaveGrid, isDark && styles.cardDark]}>
           <View style={styles.leaveBox}>
-            <Text style={styles.leaveBoxNumber}>{allowedLeaves}</Text>
-            <Text style={styles.leaveBoxLabel}>Total Annual</Text>
+            <Text style={styles.leaveBoxNumber}>{formatLeaveDays(leaveSummary.totalEarned)}</Text>
+            <Text style={styles.leaveBoxLabel}>{t('employee:total_earned', { defaultValue: 'Total Earned' })}</Text>
           </View>
           <View style={[styles.leaveBox, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: '#E2E8F0' }]}>
-            <Text style={[styles.leaveBoxNumber, { color: '#E11D48' }]}>{consumedLeaves}</Text>
-            <Text style={styles.leaveBoxLabel}>Consumed</Text>
+            <Text style={[styles.leaveBoxNumber, { color: '#E11D48' }]}>{formatLeaveDays(leaveSummary.consumed)}</Text>
+            <Text style={styles.leaveBoxLabel}>{t('employee:consumed', { defaultValue: 'Consumed' })}</Text>
           </View>
           <View style={styles.leaveBox}>
-            <Text style={[styles.leaveBoxNumber, { color: '#059669' }]}>{remainingLeaves}</Text>
-            <Text style={styles.leaveBoxLabel}>Remaining</Text>
+            <Text style={[styles.leaveBoxNumber, { color: '#059669' }]}>{formatLeaveDays(leaveSummary.available)}</Text>
+            <Text style={styles.leaveBoxLabel}>{t('employee:remaining', { defaultValue: 'Remaining' })}</Text>
           </View>
         </View>
 
         {/* Section 4: Privacy & Compliance Consent */}
-        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>Privacy & Compliance</Text>
+        <Text style={[styles.sectionHeading, isDark && styles.textWhite, { marginTop: 22 }]}>{t('employee:privacy_and_compliance', { defaultValue: 'Privacy & Compliance' })}</Text>
         
         <View style={[styles.infoCard, isDark && styles.cardDark]}>
           <View style={styles.infoRow}>
@@ -453,14 +571,14 @@ export default function ProfileScreen() {
               <Ionicons name="shield-checkmark" size={18} color="#059669" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.infoLabel}>Privacy Policy Agreement</Text>
-              <Text style={[styles.infoVal, isDark && styles.textWhite]}>Accepted & Verified (v1.0)</Text>
+              <Text style={styles.infoLabel}>{t('employee:privacy_policy_agreement', { defaultValue: 'Privacy Policy Agreement' })}</Text>
+              <Text style={[styles.infoVal, isDark && styles.textWhite]}>{t('employee:accepted_and_verified_v1_0', { defaultValue: 'Accepted & Verified (v1.0)' })}</Text>
             </View>
             <TouchableOpacity 
               style={styles.viewPolicyBtn}
               onPress={() => setIsPrivacyModalVisible(true)}
             >
-              <Text style={styles.viewPolicyBtnText}>Review</Text>
+              <Text style={styles.viewPolicyBtnText}>{t('employee:review', { defaultValue: 'Review' })}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -472,7 +590,7 @@ export default function ProfileScreen() {
           activeOpacity={0.85}
         >
           <Ionicons name="log-out-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-          <Text style={styles.logoutButtonText}>Logout Account</Text>
+          <Text style={styles.logoutButtonText}>{t('employee:logout_account', { defaultValue: 'Logout Account' })}</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -483,8 +601,8 @@ export default function ProfileScreen() {
           <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setIsPhotoModalVisible(false)} />
           <View style={[styles.photoModalSheet, isDark && styles.modalCardDark]}>
             <View style={styles.sheetHandle} />
-            <Text style={[styles.photoModalTitle, isDark && styles.textWhite]}>Update Profile Photo</Text>
-            <Text style={styles.photoModalSub}>Select how you would like to attach your profile picture</Text>
+            <Text style={[styles.photoModalTitle, isDark && styles.textWhite]}>{t('employee:update_profile_photo', { defaultValue: 'Update Profile Photo' })}</Text>
+            <Text style={styles.photoModalSub}>{t('employee:select_how_you_would_like_to', { defaultValue: 'Select how you would like to attach your profile picture' })}</Text>
 
             <View style={{ gap: 10, marginTop: 16 }}>
               <TouchableOpacity style={styles.photoActionBtn} onPress={handleTakePhoto} activeOpacity={0.8}>
@@ -492,8 +610,8 @@ export default function ProfileScreen() {
                   <Ionicons name="camera" size={20} color="#2563EB" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.photoActionText, isDark && styles.textWhite]}>Take Photo with Camera</Text>
-                  <Text style={styles.photoActionSub}>Capture a new selfie or portrait</Text>
+                  <Text style={[styles.photoActionText, isDark && styles.textWhite]}>{t('employee:take_photo_with_camera', { defaultValue: 'Take Photo with Camera' })}</Text>
+                  <Text style={styles.photoActionSub}>{t('employee:capture_a_new_selfie_or_portrait', { defaultValue: 'Capture a new selfie or portrait' })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
               </TouchableOpacity>
@@ -503,8 +621,8 @@ export default function ProfileScreen() {
                   <Ionicons name="images" size={20} color="#16A34A" />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.photoActionText, isDark && styles.textWhite]}>Choose from Gallery</Text>
-                  <Text style={styles.photoActionSub}>Select an existing image from phone</Text>
+                  <Text style={[styles.photoActionText, isDark && styles.textWhite]}>{t('employee:choose_from_gallery', { defaultValue: 'Choose from Gallery' })}</Text>
+                  <Text style={styles.photoActionSub}>{t('employee:select_an_existing_image_from_phone', { defaultValue: 'Select an existing image from phone' })}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
               </TouchableOpacity>
@@ -515,8 +633,8 @@ export default function ProfileScreen() {
                     <Ionicons name="trash" size={20} color="#E11D48" />
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.photoActionText, { color: '#E11D48' }]}>Remove Photo</Text>
-                    <Text style={styles.photoActionSub}>Reset to default initials avatar</Text>
+                    <Text style={[styles.photoActionText, { color: '#E11D48' }]}>{t('employee:remove_photo', { defaultValue: 'Remove Photo' })}</Text>
+                    <Text style={styles.photoActionSub}>{t('employee:reset_to_default_initials_avatar', { defaultValue: 'Reset to default initials avatar' })}</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
                 </TouchableOpacity>
@@ -528,7 +646,7 @@ export default function ProfileScreen() {
               onPress={() => setIsPhotoModalVisible(false)}
               activeOpacity={0.8}
             >
-              <Text style={styles.photoCancelBtnText}>Cancel</Text>
+              <Text style={styles.photoCancelBtnText}>{t('common:cancel', { defaultValue: 'Cancel' })}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -539,7 +657,7 @@ export default function ProfileScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, isDark && styles.textWhite]}>Edit Contact Information</Text>
+              <Text style={[styles.modalTitle, isDark && styles.textWhite]}>{t('employee:edit_contact_information', { defaultValue: 'Edit Contact Information' })}</Text>
               <TouchableOpacity onPress={() => setIsEditModalVisible(false)}>
                 <Ionicons name="close-circle-outline" size={24} color="#94A3B8" />
               </TouchableOpacity>
@@ -547,7 +665,7 @@ export default function ProfileScreen() {
 
             <View style={{ gap: 14, marginVertical: 14 }}>
               <View>
-                <Text style={styles.inputLabel}>Mobile Phone Number</Text>
+                <Text style={styles.inputLabel}>{t('employee:mobile_phone_number', { defaultValue: 'Mobile Phone Number' })}</Text>
                 <TextInput
                   style={[styles.textInput, isDark && styles.textInputDark]}
                   value={phone}
@@ -559,18 +677,18 @@ export default function ProfileScreen() {
               </View>
 
               <View>
-                <Text style={styles.inputLabel}>Emergency Contact Name / Relation</Text>
+                <Text style={styles.inputLabel}>{t('employee:emergency_contact_name_relation', { defaultValue: 'Emergency Contact Name / Relation' })}</Text>
                 <TextInput
                   style={[styles.textInput, isDark && styles.textInputDark]}
                   value={emergencyName}
                   onChangeText={setEmergencyName}
-                  placeholder="e.g. Spouse / Parent"
+                  placeholder={t('employee:e_g_spouse_parent', { defaultValue: 'e.g. Spouse / Parent' })}
                   placeholderTextColor="#94A3B8"
                 />
               </View>
 
               <View>
-                <Text style={styles.inputLabel}>Emergency Contact Phone</Text>
+                <Text style={styles.inputLabel}>{t('employee:emergency_contact_phone', { defaultValue: 'Emergency Contact Phone' })}</Text>
                 <TextInput
                   style={[styles.textInput, isDark && styles.textInputDark]}
                   value={emergencyPhone}
@@ -587,7 +705,7 @@ export default function ProfileScreen() {
                 style={styles.modalCancelBtn} 
                 onPress={() => setIsEditModalVisible(false)}
               >
-                <Text style={styles.modalCancelText}>Cancel</Text>
+                <Text style={styles.modalCancelText}>{t('common:cancel', { defaultValue: 'Cancel' })}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
@@ -598,7 +716,7 @@ export default function ProfileScreen() {
                 {isSaving ? (
                   <ActivityIndicator color="#FFFFFF" size="small" />
                 ) : (
-                  <Text style={styles.modalSaveText}>Save Changes</Text>
+                  <Text style={styles.modalSaveText}>{t('employee:save_changes', { defaultValue: 'Save Changes' })}</Text>
                 )}
               </TouchableOpacity>
             </View>

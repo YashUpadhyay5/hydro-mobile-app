@@ -122,7 +122,7 @@ export default function LoginScreen() {
           <View className="items-center mb-10">
             {/* Corporate HRMS Emblem Logo */}
             <View className={`w-20 h-20 rounded-2xl items-center justify-center mb-4 border shadow-sm ${isDark ? 'bg-blue-950/60 border-blue-800' : 'bg-primary/10 border-primary/20'}`}>
-              <Text className={`text-3xl font-extrabold ${isDark ? 'text-sky-400' : 'text-primary'}`}>HR</Text>
+              <Text className={`text-3xl font-extrabold ${isDark ? 'text-sky-400' : 'text-primary'}`}>{t('auth:hr', { defaultValue: 'HR' })}</Text>
             </View>
             <Text className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-text-main'}`}>{t('auth:login_title', { defaultValue: 'Welcome Back' })}</Text>
             <Text className={`mt-2 text-base text-center ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
@@ -189,7 +189,7 @@ export default function LoginScreen() {
               activeOpacity={0.7}
             >
               <Text className={`text-xs text-center ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
-                🔒 Enterprise Policy: <Text className={`font-semibold underline ${isDark ? 'text-sky-400' : 'text-primary'}`}>Privacy & Permissions Disclosure</Text>
+                🔒 Enterprise Policy: <Text className={`font-semibold underline ${isDark ? 'text-sky-400' : 'text-primary'}`}>{t('auth:privacy_and_permissions_disclosure', { defaultValue: 'Privacy & Permissions Disclosure' })}</Text>
               </Text>
             </TouchableOpacity>
           </View>

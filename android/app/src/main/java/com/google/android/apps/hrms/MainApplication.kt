@@ -40,6 +40,23 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+
+    // Safety crash handler for OEM / Transsion / 32-bit devices to capture diagnostic logs
+    val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+    Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+      android.util.Log.e("MainApplication", "FATAL CRASH on thread ${thread.name}: ${throwable.message}", throwable)
+      try {
+        cellular.tracker.logging.DebugLogger.init(this)
+        cellular.tracker.logging.DebugLogger.log(
+          "FATAL_CRASH",
+          "UNCAUGHT_EXCEPTION",
+          "FAILURE",
+          details = "${throwable.javaClass.name}: ${throwable.message}\n${throwable.stackTraceToString().take(1000)}"
+        )
+      } catch (_: Throwable) {}
+      defaultHandler?.uncaughtException(thread, throwable)
+    }
+
     DefaultNewArchitectureEntryPoint.releaseLevel = try {
       ReleaseLevel.valueOf(BuildConfig.REACT_NATIVE_RELEASE_LEVEL.uppercase())
     } catch (e: IllegalArgumentException) {

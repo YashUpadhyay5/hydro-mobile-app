@@ -27,7 +27,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   punch_out_time: '18:00',
   location_provider: 'GPS Preferred',
   gps_ratio_count: 1,
-  cellular_ratio_count: 6,
+  cellular_ratio_count: 2,
   location_update_interval: '30 Seconds',
   grace_minutes: 15,
   half_day_minutes: 240,

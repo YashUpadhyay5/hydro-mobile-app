@@ -1,7 +1,10 @@
 import Header from '@/components/Header';
+import AttachmentPreview from '@/components/AttachmentPreview';
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform, Image } from 'react-native';
-import { Link, useFocusEffect } from 'expo-router';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, Alert, Platform } from 'react-native';
+import { Link, useFocusEffect, useRouter } from 'expo-router';
+import { IconSymbol } from '@/components/ui/icon-symbol';
+import { Ionicons } from '@expo/vector-icons';
 import api from '@/services/api';
 import { API_BASE_URL } from '@/constants/API';
 import ExpenseCard from '@/components/ExpenseCard';
@@ -12,9 +15,11 @@ import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 export default function ExpensesScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -55,28 +60,7 @@ export default function ExpensesScreen() {
     }, [])
   );
 
-  const handleUpdateExpenseStatus = async (id: string, newStatus: 'approved' | 'rejected') => {
-    try {
-      const cleanUrl = API_BASE_URL.endsWith('/expenses') 
-        ? API_BASE_URL 
-        : `${API_BASE_URL}/expenses`;
-      
-      await api.patch(`${cleanUrl}/${id}/status`, { status: newStatus });
-      Alert.alert(t('common:success', { defaultValue: "Success" }), t('expense:status_updated', { defaultValue: `Expense has been ${newStatus}.` }));
-      
-      setExpenses(prev => 
-        prev.map(exp => exp.id === id ? { ...exp, status: newStatus } : exp)
-      );
-    } catch (err: any) {
-      console.error("Failed to update expense status:", err.message);
-      Alert.alert(t('common:error', { defaultValue: "Error" }), t('expense:err_update_status', { defaultValue: "Could not update expense status." }));
-    }
-  };
-
-  const isAdmin = user?.role === 'ADMIN';
-
   const isUserExpense = (exp: any) => {
-    if (isAdmin) return true;
     const empCode = user?.empCode || user?.employeeCode;
     const uId = user?.id;
     const uName = user?.name?.toLowerCase();
@@ -91,30 +75,64 @@ export default function ExpensesScreen() {
   };
 
   const userExpenses = expenses.filter(isUserExpense);
-  const pendingList = userExpenses.filter(exp => exp.status === 'pending');
-  const historyList = userExpenses.filter(exp => exp.status !== 'pending');
+  const pendingList = userExpenses.filter(exp => exp.status === 'pending' || exp.status === 'suspicious');
+  const historyList = userExpenses.filter(exp => exp.status !== 'pending' && exp.status !== 'suspicious');
 
   const displayData = activeTab === 'pending' ? pendingList : historyList;
 
   const renderPendingItem = ({ item }: { item: any }) => {
     const isExpanded = expandedPendingId === item.id;
+    const isSuspicious = item.status === 'suspicious';
+
+    const borderClass = isSuspicious 
+      ? 'border-l-red-500' 
+      : isExpanded 
+        ? (isDark ? 'border-l-blue-500' : 'border-l-primary') 
+        : 'border-l-amber-500';
+
+    const bgClass = isSuspicious 
+      ? (isDark ? 'bg-red-950/20' : 'bg-red-50/40') 
+      : isExpanded 
+        ? (isDark ? 'bg-blue-950/20' : 'bg-primary/5') 
+        : (isDark ? 'bg-slate-800/90' : 'bg-white');
+
     return (
-      <Card className={`mb-4 overflow-hidden border-l-4 border-y border-r ${isDark ? 'bg-slate-800/90 border-y-slate-700 border-r-slate-700' : 'bg-white border-y-border border-r-border'} ${isExpanded ? (isDark ? 'border-l-blue-500 bg-blue-950/20' : 'border-l-primary bg-primary/5') : 'border-l-amber-500'}`}>
+      <Card className={`mb-4 overflow-hidden border-l-4 border-y border-r ${isDark ? 'border-y-slate-700 border-r-slate-700' : 'border-y-border border-r-border'} ${borderClass} ${bgClass}`}>
         <TouchableOpacity 
           className="p-4"
           onPress={() => setExpandedPendingId(isExpanded ? null : item.id)}
           activeOpacity={0.7}
         >
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className={`text-base font-bold flex-1 mr-2 ${isDark ? 'text-white' : 'text-text-main'}`} numberOfLines={1}>
-              {item.category} {item.userName ? `(${t('common:by', { defaultValue: 'by' })} ${item.userName})` : ''}
-            </Text>
-            <Text className={`text-base font-black ${isDark ? 'text-sky-400' : 'text-primary'}`}>₹{item.amount.toFixed(2)}</Text>
+          <View className="flex-row justify-between items-center mb-1">
+            <View className="flex-1 mr-2 flex-row items-center flex-wrap gap-1.5">
+              <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-text-main'}`} numberOfLines={1}>
+                {item.category} {item.userName ? `(${t('common:by', { defaultValue: 'by' })} ${item.userName})` : ''}
+              </Text>
+              {isSuspicious && (
+                <View className="px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/60 border border-red-300 dark:border-red-700">
+                  <Text className="text-[10px] font-black uppercase text-red-700 dark:text-red-300">
+                    ⚠️ {t('expense:mismatch_flag', { defaultValue: 'Mismatch Flagged' })}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <Text className={`text-base font-black ${isSuspicious ? 'text-red-600 dark:text-red-400' : isDark ? 'text-sky-400' : 'text-primary'}`}>₹{item.amount.toFixed(2)}</Text>
           </View>
 
+          {isSuspicious && (
+            <View className={`my-2 p-2.5 rounded-lg border ${isDark ? 'bg-red-950/60 border-red-800' : 'bg-red-100/60 border-red-200'}`}>
+              <Text className="text-xs font-bold text-red-700 dark:text-red-300">
+                {t('expense:admin_note', { defaultValue: 'Admin Mismatch Note:' })}
+              </Text>
+              <Text className="text-xs text-red-600 dark:text-red-200 mt-0.5 leading-4">
+                {item.suspiciousReason || t('expense:mismatch_detected', { defaultValue: 'Mismatch detected by Admin. Please review, edit, and resend.' })}
+              </Text>
+            </View>
+          )}
+
           <View className="flex-row justify-between items-center mt-1">
-            <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('expense:submitted', { defaultValue: 'Submitted:' })} {new Date(item.createdAt).toLocaleDateString()}</Text>
-            <Text className={`text-[11px] font-bold ${isDark ? 'text-sky-400' : 'text-primary'}`}>
+            <Text className={`text-xs ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('expense:submitted', { defaultValue: 'Submitted:' })} {new Date(item.createdAt).toLocaleDateString(getDateLocale())}</Text>
+            <Text className={`text-[11px] font-bold ${isSuspicious ? 'text-red-600 dark:text-red-400' : isDark ? 'text-sky-400' : 'text-primary'}`}>
               {isExpanded ? `▲ ${t('common:hide_details', { defaultValue: 'Hide Details' })}` : `▼ ${t('common:view_details', { defaultValue: 'View Details' })}`}
             </Text>
           </View>
@@ -158,39 +176,66 @@ export default function ExpensesScreen() {
               ) : null}
 
               <View className="mb-3">
-                <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('expense:invoice_attachment', { defaultValue: 'Invoice / Attachment:' })}</Text>
-                {item.invoiceUrl ? (
-                  <Image 
-                    source={{ uri: item.invoiceUrl.replace(/\\/g, '/').startsWith('http') ? item.invoiceUrl.replace(/\\/g, '/') : `${API_BASE_URL.replace('/api', '')}/${item.invoiceUrl.replace(/\\/g, '/').startsWith('/') ? item.invoiceUrl.replace(/\\/g, '/').substring(1) : item.invoiceUrl.replace(/\\/g, '/')}` }} 
-                    className={`w-full h-[200px] rounded-lg ${isDark ? 'bg-slate-900' : 'bg-surface'}`}
-                    resizeMode="contain" 
-                  />
-                ) : (
-                  <View className={`w-full h-[80px] rounded-lg justify-center items-center border border-dashed ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border'}`}>
-                    <Text className={`text-xs italic ${isDark ? 'text-slate-500' : 'text-text-muted'}`}>{t('expense:no_invoice', { defaultValue: 'No Invoice Attached' })}</Text>
-                  </View>
-                )}
+                <Text className={`text-xs font-bold mb-2 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
+                  {t('expense:invoice_attachment', { defaultValue: 'Invoice / Attachment:' })}
+                  {Array.isArray(item.invoiceUrls) && item.invoiceUrls.length > 1 ? ` (${item.invoiceUrls.length})` : ''}
+                </Text>
+                {(() => {
+                  const urls: string[] = Array.isArray(item.invoiceUrls) && item.invoiceUrls.length > 0 
+                    ? item.invoiceUrls 
+                    : (item.invoiceUrl ? [item.invoiceUrl] : []);
+                  if (urls.length === 0) {
+                    return (
+                      <View className={`w-full h-[80px] rounded-lg justify-center items-center border border-dashed ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border'}`}>
+                        <Text className={`text-xs italic ${isDark ? 'text-slate-500' : 'text-text-muted'}`}>{t('expense:no_invoice', { defaultValue: 'No Invoice Attached' })}</Text>
+                      </View>
+                    );
+                  }
+                  return (
+                    <View className="gap-3">
+                      {urls.map((u, idx) => (
+                        <View key={`${u}-${idx}`}>
+                          {urls.length > 1 && (
+                            <Text className={`text-[10px] font-bold mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
+                              {t('expense:attachment_item', { defaultValue: 'Attachment' })} #{idx + 1}
+                            </Text>
+                          )}
+                          <AttachmentPreview source={u} isDark={isDark} variant="full" />
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })()}
               </View>
-              
-              {isAdmin && (
-                <View className={`flex-row justify-end gap-3 mt-4 pt-3 border-t ${isDark ? 'border-slate-700' : 'border-border/50'}`}>
-                  <Button 
-                    variant="outline" 
-                    className={`min-w-[90px] ${isDark ? 'border-emerald-700 bg-emerald-950/60' : 'border-emerald-600 bg-emerald-50'}`}
-                    onPress={() => handleUpdateExpenseStatus(item.id, 'approved')}
-                  >
-                    <Text className={`font-bold text-sm ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>{t('common:approve', { defaultValue: 'Approve' })}</Text>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className={`min-w-[90px] ${isDark ? 'border-red-700 bg-red-950/60' : 'border-red-600 bg-red-50'}`}
-                    onPress={() => handleUpdateExpenseStatus(item.id, 'rejected')}
-                  >
-                    <Text className={`font-bold text-sm ${isDark ? 'text-red-400' : 'text-red-700'}`}>{t('common:reject', { defaultValue: 'Reject' })}</Text>
-                  </Button>
-                </View>
-              )}
             </View>
+          )}
+
+          {isSuspicious && (
+            <TouchableOpacity
+              className="mt-3 py-2.5 px-4 rounded-xl flex-row items-center justify-center bg-red-600 active:bg-red-700 shadow-sm"
+              onPress={() => router.push({
+                pathname: '/expense-create',
+                params: {
+                  expenseId: item.id,
+                  category: item.category,
+                  amount: String(item.amount),
+                  billNo: item.billNo || '',
+                  billDate: item.billDate || '',
+                  merchantName: item.merchantName || '',
+                  siteName: item.siteName || '',
+                  description: item.description || '',
+                  invoiceUrl: item.invoiceUrl || '',
+                  invoiceUrls: JSON.stringify(Array.isArray(item.invoiceUrls) && item.invoiceUrls.length > 0 ? item.invoiceUrls : (item.invoiceUrl ? [item.invoiceUrl] : [])),
+                  suspiciousReason: item.suspiciousReason || ''
+                }
+              } as any)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="pencil" color="#ffffff" size={16} />
+              <Text className="text-white font-bold text-xs ml-2">
+                {t('expense:edit_and_resend', { defaultValue: 'Edit & Resend Expense' })}
+              </Text>
+            </TouchableOpacity>
           )}
         </TouchableOpacity>
       </Card>
@@ -206,22 +251,42 @@ export default function ExpensesScreen() {
   }
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-background'}`} style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
+    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-background'}`}>
       <Header />
+      {/* Page Header */}
       <View className={`flex-row justify-between items-center px-5 py-4 border-b ${isDark ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-border'}`}>
         <Text className={`text-2xl font-black tracking-tight ${isDark ? 'text-white' : 'text-text-main'}`}>
-          {activeTab === 'pending' 
-            ? (isAdmin ? t('expense:pending_approvals', { defaultValue: 'Pending Approvals' }) : t('expense:my_pending', { defaultValue: 'My Pending' }))
-            : (isAdmin ? t('expense:expense_history', { defaultValue: 'Expense History' }) : t('expense:my_history', { defaultValue: 'My History' }))
-          }
+          {t('expense:title', { defaultValue: 'Expenses' })}
         </Text>
-        <TouchableOpacity 
-          className={`px-3 py-1.5 rounded-lg border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`} 
-          onPress={fetchExpenses}
+        <TouchableOpacity
+          className={`w-[42px] h-[42px] rounded-full justify-center items-center shadow-md ${isDark ? 'bg-blue-600 shadow-black/40' : 'bg-primary shadow-black/20'}`}
+          onPress={() => router.push('/expense-create' as any)}
+          activeOpacity={0.8}
         >
-          <Text className={`text-xs font-bold ${isDark ? 'text-white' : 'text-text-main'}`}>🔄 {t('common:refresh', { defaultValue: 'Refresh' })}</Text>
+          <IconSymbol name="plus" color="#ffffff" size={22} />
         </TouchableOpacity>
       </View>
+
+      {/* Pill Tab Switcher */}
+      <View className={`flex-row p-1.5 mx-5 my-4 rounded-xl border ${isDark ? 'bg-[#1E293B] border-[#334155]' : 'bg-white border-border'}`}>
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-lg ${activeTab === 'pending' ? (isDark ? 'bg-blue-600/30' : 'bg-primary/10') : ''}`}
+          onPress={() => setActiveTab('pending')}
+        >
+          <Text className={`text-sm font-bold ${activeTab === 'pending' ? (isDark ? 'text-blue-400' : 'text-primary') : (isDark ? 'text-slate-400' : 'text-text-muted')}`}>
+            {t('expense:my_pending', { defaultValue: 'Pending' })} ({pendingList.length})
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className={`flex-1 py-2.5 items-center rounded-lg ${activeTab === 'history' ? (isDark ? 'bg-blue-600/30' : 'bg-primary/10') : ''}`}
+          onPress={() => setActiveTab('history')}
+        >
+          <Text className={`text-sm font-bold ${activeTab === 'history' ? (isDark ? 'text-blue-400' : 'text-primary') : (isDark ? 'text-slate-400' : 'text-text-muted')}`}>
+            {t('expense:my_history', { defaultValue: 'History' })} ({historyList.length})
+          </Text>
+        </TouchableOpacity>
+      </View>
+
 
       {error ? (
         <View className="flex-1 justify-center items-center px-10">
@@ -250,36 +315,6 @@ export default function ExpensesScreen() {
           />
         </View>
       )}
-
-      {/* Floating Action Dock (Positioned cleanly above standard bottom navigation bar) */}
-      <View 
-        className={`absolute left-4 right-4 h-[50px] rounded-2xl border flex-row items-center justify-between px-3 shadow-lg z-50 ${isDark ? 'bg-[#1E293B] border-[#334155] shadow-black/40' : 'bg-white border-border shadow-black/10'}`} 
-        style={{ bottom: 56 + insets.bottom + 12 }}
-      >
-        <TouchableOpacity 
-          className={`flex-1 h-11 justify-center items-center rounded-xl ${activeTab === 'pending' ? (isDark ? 'bg-blue-600/30' : 'bg-primary/10') : ''}`}
-          onPress={() => setActiveTab('pending')}
-        >
-          <Text className={`text-xs font-bold ${activeTab === 'pending' ? (isDark ? 'text-blue-400' : 'text-primary') : (isDark ? 'text-slate-400' : 'text-text-muted')}`}>
-            {isAdmin ? t('expense:pending_approvals', { defaultValue: 'Pending' }) : t('expense:my_pending', { defaultValue: 'Pending' })}
-          </Text>
-        </TouchableOpacity>
-
-        <Link href="/expense-create" asChild>
-          <TouchableOpacity className={`px-4 h-[42px] rounded-full justify-center items-center mx-2 shadow-md ${isDark ? 'bg-blue-600 shadow-blue-500/30' : 'bg-primary shadow-primary/30'}`}>
-            <Text className="text-white font-bold text-[13px]">+ {t('expense:add_expense', { defaultValue: 'Add Expense' })}</Text>
-          </TouchableOpacity>
-        </Link>
-
-        <TouchableOpacity 
-          className={`flex-1 h-11 justify-center items-center rounded-xl ${activeTab === 'history' ? (isDark ? 'bg-blue-600/30' : 'bg-primary/10') : ''}`}
-          onPress={() => setActiveTab('history')}
-        >
-          <Text className={`text-xs font-bold ${activeTab === 'history' ? (isDark ? 'text-blue-400' : 'text-primary') : (isDark ? 'text-slate-400' : 'text-text-muted')}`}>
-            {isAdmin ? t('expense:all_history', { defaultValue: 'History' }) : t('expense:my_history', { defaultValue: 'History' })}
-          </Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }

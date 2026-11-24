@@ -1,0 +1,13 @@
+{
+  "attendanceMarked": "Asistencia registrada correctamente",
+  "leaveApproved": "Permiso aprobado",
+  "leaveRejected": "Permiso rechazado",
+  "payrollGenerated": "Nómina generada correctamente",
+  "expenseApproved": "Gasto aprobado",
+  "gpsSignalLost": "Señal GPS perdida",
+  "internetConnected": "Internet conectado",
+  "internetDisconnected": "Internet desconectado",
+  "sessionExpired": "Sesión caducada",
+  "profileUpdated": "Perfil actualizado correctamente",
+  "passwordChanged": "Contraseña cambiada correctamente"
+}

@@ -16,6 +16,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import offlinePhotoRepository, { GeotaggedPhotoRecord } from '@/services/OfflinePhotoRepository';
 import geotagPhotoSyncManager from '@/services/GeotagPhotoSyncManager';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 interface OfflinePhotoQueueModalProps {
   visible: boolean;
@@ -25,6 +27,7 @@ interface OfflinePhotoQueueModalProps {
 const { width } = Dimensions.get('window');
 
 export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhotoQueueModalProps) {
+  const { t } = useTranslationSafe(['camera', 'common']);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [items, setItems] = useState<GeotaggedPhotoRecord[]>([]);
@@ -61,15 +64,15 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
       setIsSyncing(false);
 
       if (result.uploaded > 0) {
-        Alert.alert('Sync Complete', `Successfully uploaded ${result.uploaded} photo(s).`);
+        Alert.alert(t('camera:sync_complete', { defaultValue: 'Sync Complete' }), t('camera:sync_uploaded', { defaultValue: 'Successfully uploaded {{count}} photo(s).', count: result.uploaded }));
       } else if (result.failed > 0) {
-        Alert.alert('Sync Partial', `${result.failed} photo(s) could not be uploaded. Will retry automatically.`);
+        Alert.alert(t('camera:sync_partial', { defaultValue: 'Sync Partial' }), t('camera:sync_failed_retry', { defaultValue: '{{count}} photo(s) could not be uploaded. Will retry automatically.', count: result.failed }));
       } else {
-        Alert.alert('In Sync', 'All photos are up to date.');
+        Alert.alert(t('camera:in_sync', { defaultValue: 'In Sync' }), t('camera:all_photos_are_up_to_date', { defaultValue: 'All photos are up to date.' }));
       }
     } catch (e: any) {
       setIsSyncing(false);
-      Alert.alert('Sync Notice', e.message || 'Could not complete sync. Please check your internet connection.');
+      Alert.alert(t('camera:sync_notice', { defaultValue: 'Sync Notice' }), e.message || 'Could not complete sync. Please check your internet connection.');
     }
   };
 
@@ -81,12 +84,12 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
 
   const handleDeleteItem = (clientUploadId: string) => {
     Alert.alert(
-      'Remove Photo',
-      'Are you sure you want to remove this pending photo from your local device?',
+      t('camera:remove_photo', { defaultValue: 'Remove Photo' }),
+      t('camera:are_you_sure_you_want_to', { defaultValue: 'Are you sure you want to remove this pending photo from your local device?' }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common:cancel', { defaultValue: 'Cancel' }), style: 'cancel' },
         {
-          text: 'Remove',
+          text: t('camera:remove', { defaultValue: 'Remove' }),
           style: 'destructive',
           onPress: async () => {
             await offlinePhotoRepository.deleteItem(clientUploadId);
@@ -101,28 +104,28 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
     switch (status) {
       case 'PENDING':
         return {
-          label: 'Auto-Sync Active (Waiting for Internet)',
+          label: t('camera:auto_sync_active_waiting_for_internet', { defaultValue: 'Auto-Sync Active (Waiting for Internet)' }),
           bg: isDark ? '#451A03' : '#FEF3C7',
           color: isDark ? '#FBBF24' : '#D97706',
           icon: 'time-outline' as const,
         };
       case 'UPLOADING':
         return {
-          label: 'Auto-Uploading to Server...',
+          label: t('camera:auto_uploading_to_server', { defaultValue: 'Auto-Uploading to Server...' }),
           bg: isDark ? '#1E3A8A' : '#DBEAFE',
           color: isDark ? '#60A5FA' : '#2563EB',
           icon: 'cloud-upload-outline' as const,
         };
       case 'UPLOADED':
         return {
-          label: 'Uploaded to Server',
+          label: t('camera:uploaded_to_server', { defaultValue: 'Uploaded to Server' }),
           bg: isDark ? '#064E3B' : '#D1FAE5',
           color: isDark ? '#34D399' : '#059669',
           icon: 'checkmark-circle-outline' as const,
         };
       case 'FAILED':
         return {
-          label: 'Auto-Retrying when Online',
+          label: t('camera:auto_retrying_when_online', { defaultValue: 'Auto-Retrying when Online' }),
           bg: isDark ? '#4C0519' : '#FEE2E2',
           color: isDark ? '#FB7185' : '#DC2626',
           icon: 'sync-outline' as const,
@@ -146,11 +149,11 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
           {/* Header */}
           <View style={[styles.modalHeader, isDark && { borderBottomColor: '#334155' }]}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.modalTitle, isDark && { color: '#F8FAFC' }]}>Offline Photo Uploads</Text>
+              <Text style={[styles.modalTitle, isDark && { color: '#F8FAFC' }]}>{t('camera:offline_photo_uploads', { defaultValue: 'Offline Photo Uploads' })}</Text>
               <Text style={[styles.modalSubtitle, isDark && { color: '#94A3B8' }]}>
                 {pendingCount > 0 
-                  ? `⚡ Auto-Sync Active: ${pendingCount} photo(s) will upload automatically when online` 
-                  : 'All captured photos are synced with server'}
+                  ? t('camera:auto_sync_active', { defaultValue: '⚡ Auto-Sync Active: {{count}} photo(s) will upload automatically when online', count: pendingCount }) 
+                  : t('camera:all_synced', { defaultValue: 'All captured photos are synced with server' })}
               </Text>
             </View>
 
@@ -181,7 +184,7 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
                 <Ionicons name="sync" size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
               )}
               <Text style={styles.syncBtnText}>
-                {isSyncing ? 'Auto-Synchronizing Queue...' : 'Force Sync Now'}
+                {isSyncing ? t('camera:auto_synchronizing', { defaultValue: 'Auto-Synchronizing Queue...' }) : t('camera:force_sync_now', { defaultValue: 'Force Sync Now' })}
               </Text>
             </TouchableOpacity>
           </View>
@@ -190,9 +193,9 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
           {items.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="checkmark-done-circle-outline" size={56} color="#10B981" />
-              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>Queue is Empty</Text>
+              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>{t('camera:queue_is_empty', { defaultValue: 'Queue is Empty' })}</Text>
               <Text style={[styles.emptySub, isDark && { color: '#94A3B8' }]}>
-                Every geotagged photo you capture while offline is safely saved here and automatically uploaded as soon as an internet connection is established.
+                {t('camera:every_geotagged_photo_you_capture_while', { defaultValue: 'Every geotagged photo you capture while offline is safely saved here and automatically uploaded as soon as an internet connection is established.' })}
               </Text>
             </View>
           ) : (
@@ -203,12 +206,12 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
               showsVerticalScrollIndicator={false}
               renderItem={({ item, index }) => {
                 const badge = getStatusBadge(item.uploadStatus);
-                const dateStr = new Date(item.capturedAt).toLocaleTimeString([], {
+                const dateStr = new Date(item.capturedAt).toLocaleTimeString(getDateLocale(), {
                   hour: '2-digit',
                   minute: '2-digit',
                   second: '2-digit',
                 });
-                const fullDateStr = new Date(item.capturedAt).toLocaleDateString([], {
+                const fullDateStr = new Date(item.capturedAt).toLocaleDateString(getDateLocale(), {
                   month: 'short',
                   day: 'numeric',
                   year: 'numeric',
@@ -268,7 +271,7 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
                           activeOpacity={0.7}
                         >
                           <Ionicons name="refresh-outline" size={14} color={isDark ? "#93C5FD" : "#2563EB"} />
-                          <Text style={[styles.retryBtnText, isDark && { color: '#93C5FD' }]}>Retry Now</Text>
+                          <Text style={[styles.retryBtnText, isDark && { color: '#93C5FD' }]}>{t('camera:retry_now', { defaultValue: 'Retry Now' })}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -277,7 +280,7 @@ export default function OfflinePhotoQueueModal({ visible, onClose }: OfflinePhot
                           activeOpacity={0.7}
                         >
                           <Ionicons name="trash-outline" size={14} color={isDark ? "#FB7185" : "#DC2626"} />
-                          <Text style={[styles.deleteBtnText, isDark && { color: '#FB7185' }]}>Remove</Text>
+                          <Text style={[styles.deleteBtnText, isDark && { color: '#FB7185' }]}>{t('camera:remove', { defaultValue: 'Remove' })}</Text>
                         </TouchableOpacity>
                       </View>
                     )}

@@ -1,15 +1,26 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getSecureItem, deleteSecureItem } from '@/utils/storage';
 import { router } from 'expo-router';
-import { API_BASE_URL } from '@/constants/API';
+import { API_BASE_URL, isApiConfigured } from '@/constants/API';
 import { logDebug } from './DebugLogger';
 
 const api = axios.create({ baseURL: API_BASE_URL, timeout: 60000 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('userToken');
+  // Fail with the real cause instead of sending a relative URL that can only 404 or hang.
+  if (!isApiConfigured() && !config.url?.startsWith('http')) {
+    return Promise.reject(
+      new Error('No backend is configured. Set EXPO_PUBLIC_API_URL in .env.local and restart Expo with --clear.')
+    );
+  }
+
+  const token = await getSecureItem('userToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  // Keep baseURL synchronized with dynamic API_BASE_URL
+  if (API_BASE_URL) {
+    config.baseURL = API_BASE_URL;
+  }
 
   (config as any).meta = { startTime: Date.now() };
 
@@ -68,10 +79,12 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.warn("[API Security Interceptor] Detected 401 Unauthorized, cleaning auth session cache...");
       try {
-        await SecureStore.deleteItemAsync('userToken');
-        await SecureStore.deleteItemAsync('userProfile');
-        await AsyncStorage.removeItem('hasLaunched');
-        
+        await deleteSecureItem('userToken');
+        await deleteSecureItem('userProfile');
+        // Note: do NOT remove 'hasLaunched' here — it has no role in auth
+        // and its absence would cause the initAuth guard to mistakenly clear
+        // a freshly issued token on the very next cold start.
+
         // Automatically redirect to login screen
         try {
           router.replace('/(auth)/login');

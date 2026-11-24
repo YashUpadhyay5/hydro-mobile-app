@@ -28,6 +28,7 @@ import * as Network from 'expo-network';
 import offlinePhotoRepository, { GeotaggedPhotoRecord } from '@/services/OfflinePhotoRepository';
 import geotagPhotoSyncManager from '@/services/GeotagPhotoSyncManager';
 import OfflinePhotoQueueModal from '@/components/GeotagCamera/OfflinePhotoQueueModal';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 // Default export renders Communication Dashboard
 export default function CommunicationScreen() {
@@ -42,6 +43,7 @@ export function GeotagCameraScreen() {
   const isAdmin = user?.role === 'ADMIN';
   const isDark = colorScheme === 'dark';
 
+  const [viewMode, setViewMode] = useState<'CAMERA' | 'GALLERY'>('CAMERA');
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [location, setLocation] = useState<{ latitude: number; longitude: number; accuracy?: number; altitude?: number | null; address?: string } | null>(null);
@@ -70,8 +72,26 @@ export function GeotagCameraScreen() {
     };
   }, [updateQueueCount]);
 
-  if (isAdmin) {
-    return <AdminGallery />;
+  if (isAdmin && viewMode === 'GALLERY') {
+    return (
+      <View style={{ flex: 1, backgroundColor: isDark ? '#0F172A' : '#F8FAFC' }}>
+        <View style={[styles.header, isDark && styles.headerDark]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, isDark && styles.textDark]}>{t('camera:photo_gallery', { defaultValue: 'Photo Gallery' })}</Text>
+            <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>{t('camera:historical_geotagged_photos', { defaultValue: 'Historical Geotagged Photos' })}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => setViewMode('CAMERA')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#0052CC', borderRadius: 10 }}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="camera" size={16} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 13 }}>{t('camera:open_camera', { defaultValue: 'Open Camera' })}</Text>
+          </TouchableOpacity>
+        </View>
+        <AdminGallery />
+      </View>
+    );
   }
 
   const notify = (title: string, message: string, onPressAction?: () => void) => {
@@ -249,25 +269,40 @@ export function GeotagCameraScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerTitle, isDark && styles.textDark]}>{t('camera:geotag_title', { defaultValue: 'Geotagged Photo Capture' })}</Text>
           <Text style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
-            Offline-Ready • Auto-Sync
+            {t('camera:offline_ready_auto_sync', { defaultValue: 'Offline-Ready • Auto-Sync' })}
           </Text>
         </View>
 
-        {/* Offline Queue Badge Button */}
-        <TouchableOpacity
-          style={[styles.queueButton, pendingCount > 0 && styles.queueButtonActive]}
-          onPress={() => setIsQueueModalVisible(true)}
-          activeOpacity={0.7}
-        >
-          <Ionicons
-            name={pendingCount > 0 ? "cloud-upload" : "checkmark-circle"}
-            size={16}
-            color={pendingCount > 0 ? "#D97706" : "#10B981"}
-          />
-          <Text style={[styles.queueButtonText, pendingCount > 0 && { color: '#D97706', fontWeight: '700' }]}>
-            {pendingCount > 0 ? `${pendingCount} Offline` : 'Queue (0)'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {isAdmin && (
+            <TouchableOpacity
+              style={[styles.queueButton, { backgroundColor: isDark ? '#1E293B' : '#F1F5F9' }]}
+              onPress={() => setViewMode('GALLERY')}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="images-outline" size={16} color={isDark ? '#38BDF8' : '#0052CC'} />
+              <Text style={[styles.queueButtonText, { color: isDark ? '#38BDF8' : '#0052CC', fontWeight: '600' }]}>
+                {t('camera:gallery', { defaultValue: 'Gallery' })}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Offline Queue Badge Button */}
+          <TouchableOpacity
+            style={[styles.queueButton, pendingCount > 0 && styles.queueButtonActive]}
+            onPress={() => setIsQueueModalVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={pendingCount > 0 ? "cloud-upload" : "checkmark-circle"}
+              size={16}
+              color={pendingCount > 0 ? "#D97706" : "#10B981"}
+            />
+            <Text style={[styles.queueButtonText, pendingCount > 0 && { color: '#D97706', fontWeight: '700' }]}>
+              {pendingCount > 0 ? `${pendingCount} Offline` : 'Queue (0)'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Offline Status Alert Banner if pending photos exist */}
@@ -298,7 +333,7 @@ export function GeotagCameraScreen() {
                 <View style={styles.locationOverlay}>
                   <View style={styles.gpsBadge}>
                     <IconSymbol name="location.fill" size={10} color="#facc15" />
-                    <Text style={styles.gpsBadgeText}>GPS Map Camera (Offline Verified)</Text>
+                    <Text style={styles.gpsBadgeText}>{t('camera:gps_map_camera_offline_verified', { defaultValue: 'GPS Map Camera (Offline Verified)' })}</Text>
                   </View>
 
                   <View style={styles.mapContainer}>
@@ -331,7 +366,7 @@ export function GeotagCameraScreen() {
                       Lat {location.latitude.toFixed(5)}° Long {location.longitude.toFixed(5)}° (±{Math.round(location.accuracy || 10)}m)
                     </Text>
                     <Text style={styles.locationSubText}>
-                      {`${['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]}, ${new Date().toLocaleDateString('en-GB')} ${new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute:'2-digit'})} GMT+05:30`}
+                      {`${new Date().toLocaleDateString(getDateLocale(), { weekday: 'long' })}, ${new Date().toLocaleDateString(getDateLocale())} ${new Date().toLocaleTimeString(getDateLocale(), {hour: '2-digit', minute:'2-digit'})} GMT+05:30`}
                     </Text>
                   </View>
                 </View>
@@ -408,7 +443,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f3f4f6',
-    paddingTop: Platform.OS === 'ios' ? 50 : 20,
   },
   containerDark: {
     backgroundColor: '#121212',

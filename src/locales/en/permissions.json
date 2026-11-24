@@ -3,5 +3,14 @@
   "camera_perm_desc": "App requires camera access for geotagged photos.",
   "location_perm_title": "Location Permission Required",
   "location_perm_desc": "App requires location access for geofence verification.",
-  "grant_permission": "Grant Permission"
+  "grant_permission": "Grant Permission",
+  "denied_title": "Permission Denied",
+  "camera_required": "Camera access is required to take geotagged photos.",
+  "location_required": "Location access is required to geotag your photos.",
+  "location_required_v2": "Location permissions are required to fetch current coordinates.",
+  "gps_off_title": "Location Services Off",
+  "enable_gps": "Please enable GPS/location services on your device.",
+  "camera_required_v2": "Access to camera is required.",
+  "photos_required": "Access to photos is required.",
+  "photos_required_v2": "Storage & media permission is required to attach files."
 }

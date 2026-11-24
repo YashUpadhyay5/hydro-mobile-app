@@ -1,0 +1,16 @@
+{
+  "title": "Nómina",
+  "generatePayroll": "Generar nómina",
+  "payslip": "Recibo de nómina",
+  "salary": "Salario",
+  "basicSalary": "Salario base",
+  "allowances": "Complementos",
+  "deductions": "Deducciones",
+  "netSalary": "Salario neto",
+  "payrollGenerated": "Nómina generada correctamente",
+  "month": "Mes",
+  "year": "Año",
+  "downloadPayslip": "Descargar recibo de nómina",
+  "statusPaid": "Pagado",
+  "statusPending": "Pendiente"
+}

@@ -34,5 +34,20 @@
   "rejected": "અસ્વીકૃત",
   "warning": "ચેતવણી",
   "submit": "સબમિટ કરો",
-  "search_placeholder": "શોધો..."
+  "search_placeholder": "શોધો...",
+  "chat": "ચેટ",
+  "update": "સંપાદિત કરો",
+  "timeout_msg": "60 સેકન્ડ પછી વિનંતીનો સમય સમાપ્ત થયો.",
+  "saving": "સાચવી રહ્યું છે...",
+  "other": "અન્ય",
+  "no_results": "કોઈ મેળ ખાતા કર્મચારી મળ્યા નથી.",
+  "optional": "વૈકલ્પિક",
+  "copied": "કૉપિ થયું",
+  "active_now": "હમણાં સક્રિય",
+  "active": "સક્રિય",
+  "coming_soon": "જલ્દી આવી રહ્યું છે",
+  "got_it": "સમજાયું",
+  "all_chats": "બધી ચેટ",
+  "unread": "વાંચ્યા વગરના",
+  "all_depts": "બધા વિભાગ"
 }

@@ -34,5 +34,21 @@
   "rejected": "Rejected",
   "warning": "Warning",
   "submit": "Submit",
-  "search_placeholder": "Search..."
+  "search_placeholder": "Search...",
+  "chat": "Chat",
+  "update": "Edit",
+  "timeout_msg": "Request timed out after 60 seconds.",
+  "saving": "Saving...",
+  "other": "Other",
+  "no_results": "No matching employees found.",
+  "optional": "Optional",
+  "copied": "Copied",
+  "active_now": "Active now",
+  "active": "Active",
+  "coming_soon": "Coming Soon",
+  "got_it": "Got it",
+  "all_chats": "All Chats",
+  "unread": "Unread",
+  "all_depts": "All Depts",
+  "open_settings": "Open Settings"
 }

@@ -9,7 +9,8 @@
     "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "postinstall": "node scripts/patch-worklets.js"
+    "postinstall": "node scripts/patch-worklets.js",
+    "preview": "node scripts/preview.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

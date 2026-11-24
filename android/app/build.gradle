@@ -22,8 +22,7 @@ react {
     bundleCommand = "export:embed"
 
     /* Folders */
-     //   The root of your project, i.e. where "package.json" lives. Default is '../..'
-    // root = file("../../")
+    root = file(projectRoot)
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
     // reactNativeDir = file("../../node_modules/react-native")
     //   The folder where the react-native Codegen package is. Default is ../../node_modules/@react-native/codegen
@@ -36,22 +35,8 @@ react {
     // debuggableVariants = ["liteDebug", "prodDebug"]
 
     /* Bundling */
-    //   A list containing the node command and its flags. Default is just 'node'.
-    // nodeExecutableAndArgs = ["node"]
-
-    //
-    //   The path to the CLI configuration file. Default is empty.
-    // bundleConfig = file(../rn-cli.config.js)
-    //
-    //   The name of the generated asset file containing your JS bundle
-    // bundleAssetName = "MyApplication.android.bundle"
-    //
-    //   The entry file for bundle generation. Default is 'index.android.js' or 'index.js'
-    // entryFile = file("../js/MyApplication.android.js")
-    //
-    //   A list of extra flags to pass to the 'bundle' commands.
-    //   See https://github.com/react-native-community/cli/blob/main/docs/commands.md#bundle
-    // extraPackagerArgs = []
+    nodeExecutableAndArgs = ["node", "--max-old-space-size=4096"]
+    extraPackagerArgs = ["--max-workers=2"]
 
     /* Hermes Commands */
     //   The hermes compiler command to run. By default it is 'hermesc'
@@ -93,8 +78,8 @@ android {
         applicationId 'com.google.android.apps.hrms'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 9
+        versionName "1.5.1"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -126,18 +111,31 @@ android {
         jniLibs {
             def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
             useLegacyPackaging enableLegacyPackaging.toBoolean()
+            // x86/x86_64 is not a supported ABI: we don't compile our own native code for it. Prebuilt
+            // third-party AARs still ship x86 libraries, which would otherwise be packaged into the
+            // universal APK as an incomplete set. This drops most of them (and ~19 MB), but not the
+            // React Native core libs (hermes, jsi, fbjni, reactnative), which are packaged via pickFirsts.
+            // So the universal APK is still NOT usable on x86 devices; use the per-ABI APKs for ARM.
+            excludes.add('**/x86/**')
+            excludes.add('**/x86_64/**')
+            pickFirsts.add('**/libc++_shared.so')
+            pickFirsts.add('**/libfbjni.so')
         }
     }
     androidResources {
         ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~'
     }
 
-    // Generate separate APKs for each ABI (64-bit and 32-bit)
+    // Generate separate APKs for each ABI (64-bit and 32-bit).
+    // Only split for ABIs we actually compile native code for (reactNativeArchitectures);
+    // splitting for any other ABI produces an APK with missing .so files that crashes on launch.
+    def nativeArchitectures = (findProperty('reactNativeArchitectures') ?: 'armeabi-v7a,arm64-v8a')
+        .split(',').collect { it.trim() }.findAll { it }
     splits {
         abi {
             enable true
             reset()
-            include "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
+            include(*nativeArchitectures)
             universalApk true  // Generate a universal APK as well
         }
     }

@@ -34,5 +34,20 @@
   "rejected": "ਰੱਦ ਕੀਤਾ",
   "warning": "ਚੇਤਾਵਨੀ",
   "submit": "ਜਮ੍ਹਾਂ ਕਰੋ",
-  "search_placeholder": "ਖੋਜੋ..."
+  "search_placeholder": "ਖੋਜੋ...",
+  "chat": "ਚੈਟ",
+  "update": "ਸੋਧੋ",
+  "timeout_msg": "60 ਸਕਿੰਟ ਬਾਅਦ ਬੇਨਤੀ ਦਾ ਸਮਾਂ ਖ਼ਤਮ ਹੋ ਗਿਆ।",
+  "saving": "ਸੰਭਾਲਿਆ ਜਾ ਰਿਹਾ ਹੈ...",
+  "other": "ਹੋਰ",
+  "no_results": "ਕੋਈ ਮੇਲ ਖਾਂਦਾ ਕਰਮਚਾਰੀ ਨਹੀਂ ਮਿਲਿਆ।",
+  "optional": "ਵਿਕਲਪਿਕ",
+  "copied": "ਕਾਪੀ ਹੋ ਗਿਆ",
+  "active_now": "ਹੁਣੇ ਸਰਗਰਮ",
+  "active": "ਸਰਗਰਮ",
+  "coming_soon": "ਜਲਦੀ ਆ ਰਿਹਾ ਹੈ",
+  "got_it": "ਸਮਝ ਗਿਆ",
+  "all_chats": "ਸਾਰੀਆਂ ਚੈਟਾਂ",
+  "unread": "ਨਾ-ਪੜ੍ਹੇ",
+  "all_depts": "ਸਾਰੇ ਵਿਭਾਗ"
 }

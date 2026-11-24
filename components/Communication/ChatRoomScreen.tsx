@@ -40,6 +40,8 @@ import { formatDocOrMessageSnippet, chatNotificationManager } from '@/utils/chat
 import { ChatReadManager } from '@/utils/chatReadManager';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
+import { resolveAvatarUrl } from '@/utils/avatar';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 interface ChatRoomScreenProps {
   currentUserId: string;
@@ -259,7 +261,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
     try {
       const perm = await ImagePicker.requestCameraPermissionsAsync();
       if (!perm.granted) {
-        Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:camera_required', { defaultValue: 'Access to camera is required.' }));
+        Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:camera_required_v2', { defaultValue: 'Access to camera is required.' }));
         return;
       }
 
@@ -319,7 +321,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
       if (Platform.OS !== 'web') {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:photos_required', { defaultValue: 'Storage & media permission is required to attach files.' }));
+          Alert.alert(t('permissions:denied_title', { defaultValue: 'Permission Denied' }), t('permissions:photos_required_v2', { defaultValue: 'Storage & media permission is required to attach files.' }));
           return;
         }
       }
@@ -400,7 +402,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
       const targetUrl = attUrl || (selectedMessage?.attachments && selectedMessage.attachments[0]?.fileUrl) || previewAttachment?.fileUrl;
       const fileName = attName || (selectedMessage?.attachments && selectedMessage.attachments[0]?.fileName) || previewAttachment?.fileName || targetUrl?.split('/').pop() || `download_${Date.now()}`;
       if (!targetUrl) {
-        Alert.alert('Download Error', 'Attachment URL is not available.');
+        Alert.alert(t('communication:download_error', { defaultValue: 'Download Error' }), t('communication:attachment_url_is_not_available', { defaultValue: 'Attachment URL is not available.' }));
         return;
       }
 
@@ -409,7 +411,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
       const downloadRes = await FileSystem.downloadAsync(targetUrl, fileUri);
 
       if (downloadRes.status !== 200) {
-        Alert.alert('Download Error', 'Could not download file from server.');
+        Alert.alert(t('communication:download_error', { defaultValue: 'Download Error' }), t('communication:could_not_download_file_from_server', { defaultValue: 'Could not download file from server.' }));
         return;
       }
 
@@ -419,7 +421,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
           const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
           await MediaLibrary.createAlbumAsync('HRMS App', asset, false);
           Alert.alert(
-            'Saved to Photos 🖼️',
+            t('communication:saved_to_photos', { defaultValue: 'Saved to Photos 🖼️' }),
             `"${fileName}" has been saved directly to your phone's Photo Gallery (Album: HRMS App)!`
           );
           return;
@@ -432,7 +434,7 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
       );
     } catch (err) {
       console.error('[Download Attachment Error]', err);
-      Alert.alert('Download Error', 'Could not save file to device.');
+      Alert.alert(t('communication:download_error', { defaultValue: 'Download Error' }), t('communication:could_not_save_file_to_device', { defaultValue: 'Could not save file to device.' }));
     }
   };
 
@@ -525,10 +527,10 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
               return (
                 <View style={[styles.replyContextBox, isMine ? styles.replyContextMine : styles.replyContextOther]}>
                   <Text style={[styles.replyContextTitle, isMine && { color: '#ffffff' }]}>
-                    {parentMsg.senderId === currentUserId ? 'You' : otherUser.name}
+                    {parentMsg.senderId === currentUserId ? t('communication:you', { defaultValue: 'You' }) : otherUser.name}
                   </Text>
                   <Text style={[styles.replyContextText, isMine && { color: '#e0e7ff' }]} numberOfLines={2}>
-                    {parentMsg.content || (parentMsg.attachments?.[0] ? `📷 ${parentMsg.attachments[0].fileName}` : 'Attachment')}
+                    {parentMsg.content || (parentMsg.attachments?.[0] ? `📷 ${parentMsg.attachments[0].fileName}` : t('communication:attachment', { defaultValue: 'Attachment' }))}
                   </Text>
                 </View>
               );
@@ -636,9 +638,16 @@ export default function ChatRoomScreen({ currentUserId, chatId, otherUser, onBac
 
         <TouchableOpacity style={styles.headerProfile} onPress={() => setShowChatDetailScreen(true)}>
           <View style={styles.headerAvatar}>
-            <Text style={styles.headerAvatarText}>
-              {otherUser.name ? otherUser.name.substring(0, 2).toUpperCase() : 'EM'}
-            </Text>
+            {resolveAvatarUrl(otherUser.avatar) ? (
+              <Image 
+                source={{ uri: resolveAvatarUrl(otherUser.avatar)! }} 
+                style={styles.headerAvatarImage} 
+              />
+            ) : (
+              <Text style={styles.headerAvatarText}>
+                {otherUser.name ? otherUser.name.substring(0, 2).toUpperCase() : 'EM'}
+              </Text>
+            )}
             <View
               style={[
                 styles.headerOnlineDot,
@@ -927,14 +936,14 @@ function formatDateSeparator(dateStr: string) {
   const d = new Date(dateStr);
   const today = new Date();
   if (d.toDateString() === today.toDateString()) return 'Today';
-  return d.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(getDateLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function formatTime(dateStr?: string) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit' });
 }
 
 function getAttachmentIcon(fileType?: string) {
@@ -983,6 +992,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
+  },
+  headerAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#cbd5e1',
   },
   headerAvatarText: {
     color: '#ffffff',

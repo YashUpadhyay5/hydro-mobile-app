@@ -2,17 +2,22 @@ package cellular.tracker.repository
 
 import android.content.Context
 import android.util.Log
+import androidx.work.BackoffPolicy
 import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import cellular.tracker.db.AppDatabase
 import cellular.tracker.db.OfflineLocation
 import cellular.tracker.worker.LocationSyncWorker
+import cellular.tracker.worker.TrackingHeartbeatWorker
 import cellular.tracker.logging.DebugLogger
 import java.util.Calendar
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class LocationRepository private constructor(context: Context) {
     private val db = AppDatabase.getDatabase(context)
@@ -22,6 +27,7 @@ class LocationRepository private constructor(context: Context) {
 
     companion object {
         private const val TAG = "LocationRepository"
+        private const val HEARTBEAT_WORK_NAME = "LOCATION_TRACKING_HEARTBEAT"
 
         @Volatile
         private var INSTANCE: LocationRepository? = null
@@ -68,6 +74,9 @@ class LocationRepository private constructor(context: Context) {
 
             val syncWorkRequest = OneTimeWorkRequestBuilder<LocationSyncWorker>()
                 .setConstraints(constraints)
+                // The default exponential backoff reaches hours; after clock-out nothing else
+                // re-triggers the upload, so keep retries frequent until the queue drains.
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 30, TimeUnit.SECONDS)
                 .build()
 
             val policy = if (forceReplace) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.KEEP
@@ -82,6 +91,29 @@ class LocationRepository private constructor(context: Context) {
         } catch (e: Exception) {
             DebugLogger.log("WORKMANAGER", "ENQUEUE_WORK", "FAILURE", details = e.message)
             Log.e(TAG, "[WorkManager] Failed to enqueue WorkManager sync task", e)
+        }
+    }
+
+    /** Starts the periodic [TrackingHeartbeatWorker] for the current shift (no-op if already scheduled). */
+    fun scheduleTrackingHeartbeat() {
+        try {
+            val heartbeatRequest = PeriodicWorkRequestBuilder<TrackingHeartbeatWorker>(15, TimeUnit.MINUTES).build()
+            WorkManager.getInstance(appContext).enqueueUniquePeriodicWork(
+                HEARTBEAT_WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                heartbeatRequest
+            )
+        } catch (e: Exception) {
+            DebugLogger.log("WORKMANAGER", "ENQUEUE_HEARTBEAT", "FAILURE", details = e.message)
+            Log.e(TAG, "[WorkManager] Failed to schedule tracking heartbeat", e)
+        }
+    }
+
+    fun cancelTrackingHeartbeat() {
+        try {
+            WorkManager.getInstance(appContext).cancelUniqueWork(HEARTBEAT_WORK_NAME)
+        } catch (e: Exception) {
+            Log.e(TAG, "[WorkManager] Failed to cancel tracking heartbeat", e)
         }
     }
 

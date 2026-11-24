@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 
 export interface Holiday {
   id: string;
@@ -42,6 +43,15 @@ interface HolidayCalendarModalProps {
 }
 
 export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: HolidayCalendarModalProps) {
+  const { t } = useTranslationSafe(['dashboard', 'common']);
+  const typeLabels: Record<string, string> = {
+    ALL: t('dashboard:filter_all', { defaultValue: 'All' }),
+    UPCOMING: t('dashboard:filter_upcoming', { defaultValue: 'Upcoming' }),
+    PAST: t('dashboard:filter_past', { defaultValue: 'Past' }),
+    NATIONAL: t('dashboard:filter_national', { defaultValue: 'National' }),
+    REGIONAL: t('dashboard:filter_regional', { defaultValue: 'Regional' }),
+    FLOATING: t('dashboard:filter_floating', { defaultValue: 'Floating' }),
+  };
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | 'UPCOMING' | 'PAST' | 'NATIONAL' | 'REGIONAL' | 'FLOATING'>('ALL');
@@ -75,9 +85,9 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
         {/* Top Header */}
         <View style={[styles.header, isDark && { backgroundColor: '#1E293B', borderBottomColor: '#334155' }]}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.headerTitle, isDark && { color: '#F8FAFC' }]}>{calendar?.name || 'Holiday Calendar'}</Text>
+            <Text style={[styles.headerTitle, isDark && { color: '#F8FAFC' }]}>{calendar?.name || t('dashboard:holiday_calendar', { defaultValue: 'Holiday Calendar' })}</Text>
             <Text style={[styles.headerSubtitle, isDark && { color: '#94A3B8' }]}>
-              {calendar?.location ? `📍 Location: ${calendar.location} • ${calendar.year || 2026}` : 'Official company holidays schedule'}
+              {calendar?.location ? `📍 ${t('dashboard:location_label', { defaultValue: 'Location' })}: ${calendar.location}${calendar.year ? ` • ${calendar.year}` : ''}` : t('dashboard:official_holidays_schedule', { defaultValue: 'Official company holidays schedule' })}
             </Text>
           </View>
           <TouchableOpacity 
@@ -93,15 +103,15 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
         <View style={[styles.statsRow, isDark && { backgroundColor: '#1E293B', borderColor: '#334155' }]}>
           <View style={styles.statBox}>
             <Text style={[styles.statNumber, isDark && { color: '#F8FAFC' }]}>{totalCount}</Text>
-            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>Total</Text>
+            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>{t('dashboard:total', { defaultValue: 'Total' })}</Text>
           </View>
           <View style={[styles.statBox, { borderLeftWidth: 1, borderRightWidth: 1, borderColor: isDark ? '#334155' : '#E2E8F0' }]}>
             <Text style={[styles.statNumber, { color: '#10B981' }]}>{upcomingCount}</Text>
-            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>Upcoming</Text>
+            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>{t('dashboard:upcoming', { defaultValue: 'Upcoming' })}</Text>
           </View>
           <View style={styles.statBox}>
             <Text style={[styles.statNumber, { color: '#64748B' }]}>{pastCount}</Text>
-            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>Passed</Text>
+            <Text style={[styles.statLabel, isDark && { color: '#94A3B8' }]}>{t('dashboard:passed', { defaultValue: 'Passed' })}</Text>
           </View>
         </View>
 
@@ -125,7 +135,7 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
                   isDark && { color: '#94A3B8' },
                   isActive && (isDark ? { color: '#0F172A', fontWeight: '800' } : styles.filterTextActive)
                 ]}>
-                  {filter === 'ALL' ? 'All' : filter.charAt(0) + filter.slice(1).toLowerCase()}
+                  {typeLabels[filter]}
                 </Text>
               </TouchableOpacity>
             );
@@ -140,8 +150,8 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
           {filteredHolidays.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={48} color={isDark ? '#64748B' : '#94A3B8'} />
-              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>No Holidays Found</Text>
-              <Text style={[styles.emptyDesc, isDark && { color: '#94A3B8' }]}>No company holidays match your selected filter criteria.</Text>
+              <Text style={[styles.emptyTitle, isDark && { color: '#F8FAFC' }]}>{t('dashboard:no_holidays_found', { defaultValue: 'No Holidays Found' })}</Text>
+              <Text style={[styles.emptyDesc, isDark && { color: '#94A3B8' }]}>{t('dashboard:no_company_holidays_match_your_selected', { defaultValue: 'No company holidays match your selected filter criteria.' })}</Text>
             </View>
           ) : (
             filteredHolidays.map((holiday) => {
@@ -150,7 +160,7 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
               const isRegional = typeUpper.includes('REGIONAL') || typeUpper.includes('STATE') || typeUpper.includes('FESTIVAL');
               const isPast = holiday.diffDays !== undefined && holiday.diffDays < 0;
 
-              const title = holiday.title || holiday.name || 'Holiday';
+              const title = holiday.title || holiday.name || t('dashboard:holiday', { defaultValue: 'Holiday' });
               const dateDisplay = holiday.dateFormatted || holiday.date;
 
               return (
@@ -202,7 +212,7 @@ export function HolidayCalendarModal({ visible, onClose, holidays, calendar }: H
                           isNational ? styles.tagTextNational : isRegional ? styles.tagTextRegional : styles.tagTextFloating,
                           isDark && { color: '#38BDF8' }
                         ]}>
-                          {holiday.type}
+                          {typeLabels[String(holiday.type).toUpperCase()] ?? holiday.type}
                         </Text>
                       </View>
                     </View>

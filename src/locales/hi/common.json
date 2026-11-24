@@ -34,5 +34,20 @@
   "rejected": "अस्वीकृत",
   "warning": "चेतावनी",
   "submit": "सबमिट करें",
-  "search_placeholder": "खोजें..."
+  "search_placeholder": "खोजें...",
+  "chat": "चैट",
+  "update": "संपादित करें",
+  "timeout_msg": "60 सेकंड बाद अनुरोध का समय समाप्त हो गया।",
+  "saving": "सहेजा जा रहा है...",
+  "other": "अन्य",
+  "no_results": "कोई मिलता-जुलता कर्मचारी नहीं मिला।",
+  "optional": "वैकल्पिक",
+  "copied": "कॉपी हो गया",
+  "active_now": "अभी सक्रिय",
+  "active": "सक्रिय",
+  "coming_soon": "जल्द आ रहा है",
+  "got_it": "समझ गया",
+  "all_chats": "सभी चैट",
+  "unread": "अपठित",
+  "all_depts": "सभी विभाग"
 }

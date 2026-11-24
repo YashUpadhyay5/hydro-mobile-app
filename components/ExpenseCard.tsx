@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
-import { API_BASE_URL } from '@/constants/API';
+import { View, Text } from 'react-native';
+import AttachmentPreview from './AttachmentPreview';
 import { Card } from './ui/Card';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 export interface Expense {
   id: string;
@@ -17,15 +18,18 @@ export interface Expense {
   merchantName?: string;
   siteName?: string;
   invoiceUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
+  invoiceUrls?: string[];
+  status: 'pending' | 'approved' | 'rejected' | 'suspicious';
+  suspiciousReason?: string;
   createdAt: string;
 }
 
 interface ExpenseCardProps {
   expense: Expense;
+  onEdit?: () => void;
 }
 
-export default function ExpenseCard({ expense }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, onEdit }: ExpenseCardProps) {
   const { t } = useTranslationSafe(['expense', 'common']);
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -38,7 +42,7 @@ export default function ExpenseCard({ expense }: ExpenseCardProps) {
     statusStyle = isDark 
       ? "bg-emerald-950/60 border-emerald-800 text-emerald-400"
       : "bg-emerald-50 border-emerald-200 text-emerald-600";
-  } else if (expense.status === 'rejected') {
+  } else if (expense.status === 'rejected' || expense.status === 'suspicious') {
     statusStyle = isDark 
       ? "bg-rose-950/60 border-rose-800 text-rose-400"
       : "bg-rose-50 border-rose-200 text-rose-600";
@@ -47,7 +51,7 @@ export default function ExpenseCard({ expense }: ExpenseCardProps) {
   const formatDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+      return d.toLocaleDateString(getDateLocale(), { month: 'short', day: 'numeric', year: 'numeric' });
     } catch {
       return dateStr;
     }
@@ -56,17 +60,20 @@ export default function ExpenseCard({ expense }: ExpenseCardProps) {
   return (
     <Card className={`mb-4 overflow-hidden border ${isDark ? 'bg-slate-800/90 border-slate-700' : 'bg-surface border-border'}`}>
       <View className="flex-row">
-        {expense.invoiceUrl ? (
-          <Image 
-            source={{ uri: expense.invoiceUrl.replace(/\\/g, '/').startsWith('http') ? expense.invoiceUrl.replace(/\\/g, '/') : `${API_BASE_URL.replace('/api', '')}/${expense.invoiceUrl.replace(/\\/g, '/').startsWith('/') ? expense.invoiceUrl.replace(/\\/g, '/').substring(1) : expense.invoiceUrl.replace(/\\/g, '/')}` }} 
-            className={`w-[100px] min-h-[110px] ${isDark ? 'bg-slate-900' : 'bg-surface'}`}
-            resizeMode="cover" 
-          />
-        ) : (
-          <View className={`w-[100px] min-h-[110px] justify-center items-center border-r ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border/50'}`}>
-            <Text className={`text-[10px] italic ${isDark ? 'text-slate-500' : 'text-text-muted'}`}>{t('expense:no_invoice', { defaultValue: 'No Invoice' })}</Text>
-          </View>
-        )}
+        <View className="relative">
+          {expense.invoiceUrl ? (
+            <AttachmentPreview source={expense.invoiceUrl} isDark={isDark} variant="thumb" />
+          ) : (
+            <View className={`w-[100px] min-h-[110px] justify-center items-center border-r ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border/50'}`}>
+              <Text className={`text-[10px] italic ${isDark ? 'text-slate-500' : 'text-text-muted'}`}>{t('expense:no_invoice', { defaultValue: 'No Invoice' })}</Text>
+            </View>
+          )}
+          {expense.invoiceUrls && expense.invoiceUrls.length > 1 && (
+            <View className="absolute bottom-1 right-1 bg-black/75 px-1.5 py-0.5 rounded">
+              <Text className="text-[9px] font-black text-white">+{expense.invoiceUrls.length - 1}</Text>
+            </View>
+          )}
+        </View>
         
         <View className="flex-1 p-3 justify-between">
           <View className="flex-row justify-between items-start mb-1">
@@ -76,11 +83,11 @@ export default function ExpenseCard({ expense }: ExpenseCardProps) {
           
           {expense.billNo || expense.merchantName || expense.siteName ? (
             <Text className={`text-xs font-semibold mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`} numberOfLines={1}>
-              {expense.billNo ? `Bill #${expense.billNo}` : ''}
+              {expense.billNo ? `${t('expense:bill_hash', { defaultValue: 'Bill #' })}${expense.billNo}` : ''}
               {expense.billNo && (expense.merchantName || expense.siteName) ? ' • ' : ''}
               {expense.merchantName ? expense.merchantName : ''}
               {expense.merchantName && expense.siteName ? ' • ' : ''}
-              {expense.siteName ? `Site: ${expense.siteName}` : ''}
+              {expense.siteName ? `${t('expense:site_label', { defaultValue: 'Site' })}: ${expense.siteName}` : ''}
             </Text>
           ) : null}
 
@@ -89,6 +96,19 @@ export default function ExpenseCard({ expense }: ExpenseCardProps) {
               {expense.description}
             </Text>
           ) : null}
+
+          {expense.status === 'suspicious' && (
+            <View className={`my-2 p-2 rounded border ${isDark ? 'bg-red-950/40 border-red-800' : 'bg-red-50 border-red-200'}`}>
+              <Text className="text-[11px] font-bold text-red-600 dark:text-red-400">
+                ⚠️ {t('expense:suspicious_flagged', { defaultValue: 'Mismatch / Suspicious' })}
+              </Text>
+              {expense.suspiciousReason ? (
+                <Text className="text-[10px] text-red-500 dark:text-red-300 mt-0.5">
+                  {expense.suspiciousReason}
+                </Text>
+              ) : null}
+            </View>
+          )}
 
           <View className="flex-row justify-between items-center mt-auto">
             <Text className={`text-[10px] font-medium ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{formatDate(expense.createdAt)}</Text>

@@ -6,12 +6,15 @@ import api from '@/services/api';
 import { useAuth } from '../context/AuthContext';
 import { useTranslationSafe } from '@/src/hooks/useTranslationSafe';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getDateLocale } from '@/src/i18n/dateLocale';
 
 export default function AttendanceTodayScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
   const { t } = useTranslationSafe(['attendance', 'common']);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -41,16 +44,20 @@ export default function AttendanceTodayScreen() {
         );
       };
 
-      // 1. Fetch today's attendance summary record
-      const attRes = await api.get('/attendance');
+      const targetUserId = user?.empCode || user?.employeeCode || user?.id;
+
+      // Parallel fetch for today's records filtered directly on the backend
+      const [attRes, footRes] = await Promise.all([
+        api.get('/attendance', { params: { userId: targetUserId, date: todayDate } }).catch(() => ({ data: [] })),
+        api.get('/footprints', { params: { userId: targetUserId, date: todayDate } }).catch(() => ({ data: [] }))
+      ]);
+
       if (attRes.data && Array.isArray(attRes.data)) {
         const userAtts = attRes.data.filter(isUserMatch);
-        const matchingToday = userAtts.find((item: any) => item.date === todayDate) || userAtts[0];
-        setTodayRecord(matchingToday || null);
+        const matchingToday = userAtts.find((item: any) => item.date === todayDate) || null;
+        setTodayRecord(matchingToday);
       }
 
-      // 2. Fetch today's detailed footprints/punches
-      const footRes = await api.get('/footprints');
       if (footRes.data && Array.isArray(footRes.data)) {
         const userFoots = footRes.data.filter(isUserMatch);
         const matchingFootprints = userFoots.filter((item: any) => item.date === todayDate || !item.date);
@@ -69,19 +76,19 @@ export default function AttendanceTodayScreen() {
     fetchData();
   };
 
-  const formattedDateHeader = new Date().toLocaleDateString('en-GB', {
+  const formattedDateHeader = new Date().toLocaleDateString(getDateLocale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   });
 
-  const clockInTime = todayRecord?.checkIn || (todayFootprints.length > 0 ? new Date(Number(todayFootprints[0].timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'MISSING');
+  const clockInTime = todayRecord?.checkIn || (todayFootprints.length > 0 ? new Date(Number(todayFootprints[0].timestamp)).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'MISSING');
   const clockOutTime = todayRecord?.checkOut || 'MISSING';
 
   // Dynamic late calculation against 09:00 AM shift start
   const computeLateStatus = () => {
-    if (!todayRecord && todayFootprints.length === 0) return { isLate: false, label: 'ON TIME' };
+    if (!todayRecord && todayFootprints.length === 0) return { isLate: false, label: t('attendance:on_time', { defaultValue: 'ON TIME' }) };
     
     let checkInTimestamp = todayRecord?.timestamp;
     if (!checkInTimestamp && todayFootprints.length > 0) {
@@ -104,7 +111,7 @@ export default function AttendanceTodayScreen() {
         };
       }
     }
-    return { isLate: false, label: 'ON TIME' };
+    return { isLate: false, label: t('attendance:on_time', { defaultValue: 'ON TIME' }) };
   };
 
   const lateInfo = computeLateStatus();
@@ -112,9 +119,12 @@ export default function AttendanceTodayScreen() {
   const grossHours = todayRecord?.workingHours || '0h 0m';
 
   return (
-    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-surface'}`} style={{ paddingTop: Platform.OS === 'ios' ? 50 : 20 }}>
+    <View className={`flex-1 ${isDark ? 'bg-[#0F172A]' : 'bg-surface'}`}>
       {/* Top Header */}
-      <View className={`flex-row items-center justify-between px-5 py-4 border-b z-10 ${isDark ? 'bg-[#1E293B] border-slate-700' : 'bg-background border-border'}`}>
+      <View 
+        className={`flex-row items-center justify-between px-5 border-b z-10 ${isDark ? 'bg-[#1E293B] border-slate-700' : 'bg-background border-border'}`}
+        style={{ paddingTop: Math.max(insets.top + 6, 16), paddingBottom: 14 }}
+      >
         <TouchableOpacity 
           className={`w-10 h-10 rounded-full items-center justify-center border ${isDark ? 'bg-slate-800 border-slate-700' : 'bg-surface border-border'}`}
           onPress={() => router.back()}
@@ -166,7 +176,7 @@ export default function AttendanceTodayScreen() {
               ) : (
                 <View className={`px-2.5 py-1 rounded-md border ${isDark ? 'bg-emerald-950/60 border-emerald-800' : 'bg-emerald-50 border-emerald-100/50'}`}>
                   <Text className={`text-[11px] font-bold ${isDark ? 'text-emerald-400' : 'color-emerald-600'}`}>
-                    ON TIME
+                    {t('attendance:on_time', { defaultValue: 'ON TIME' })}
                   </Text>
                 </View>
               )}
@@ -175,7 +185,7 @@ export default function AttendanceTodayScreen() {
             {/* Clock In / Out Times */}
             <View className={`flex-row justify-between items-center pb-4 border-b ${isDark ? 'border-slate-700' : 'border-border'}`}>
               <View className="flex-1">
-                <Text className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>Clock In</Text>
+                <Text className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('attendance:clock_in', { defaultValue: 'Clock In' })}</Text>
                 <View className="flex-row items-center gap-1.5">
                   <Text className="text-emerald-500 font-black text-sm">↙</Text>
                   <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-text-main'}`}>{clockInTime}</Text>
@@ -183,7 +193,7 @@ export default function AttendanceTodayScreen() {
               </View>
 
               <View className="flex-1 items-end">
-                <Text className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>Clock Out</Text>
+                <Text className={`text-xs font-medium mb-1 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('attendance:clock_out', { defaultValue: 'Clock Out' })}</Text>
                 <View className="flex-row items-center gap-1.5">
                   <Text className={clockOutTime === 'MISSING' ? 'text-rose-500 font-black text-sm' : (isDark ? 'text-white font-black text-sm' : 'text-text-main font-black text-sm')}>
                     ↗
@@ -212,13 +222,13 @@ export default function AttendanceTodayScreen() {
 
             {todayFootprints.length === 0 ? (
               <View className={`py-6 items-center justify-center rounded-xl border border-dashed ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border'}`}>
-                <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>No time logs recorded today yet.</Text>
+                <Text className={`text-xs font-medium ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>{t('attendance:no_time_logs_recorded_today_yet', { defaultValue: 'No time logs recorded today yet.' })}</Text>
               </View>
             ) : (
               todayFootprints.map((item: any, idx: number) => {
-                const logTime = item.timestamp ? new Date(Number(item.timestamp)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'Unknown';
-                const logLabel = item.trackingMethod === 'CELLULAR' ? 'Cellular Punch' : item.trackingMethod === 'GPS' ? 'Remote Clock In' : 'Location Punch';
-                const locationAddr = item.address || (item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : 'Location Unavailable');
+                const logTime = item.timestamp ? new Date(Number(item.timestamp)).toLocaleTimeString(getDateLocale(), { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : t('attendance:unknown', { defaultValue: 'Unknown' });
+                const logLabel = item.trackingMethod === 'CELLULAR' ? t('attendance:cellular_punch', { defaultValue: 'Cellular Punch' }) : item.trackingMethod === 'GPS' ? t('attendance:remote_clock_in_cap', { defaultValue: 'Remote Clock In' }) : t('attendance:location_punch', { defaultValue: 'Location Punch' });
+                const locationAddr = item.address || (item.latitude && item.longitude ? `${item.latitude.toFixed(4)}, ${item.longitude.toFixed(4)}` : t('attendance:location_unavailable', { defaultValue: 'Location Unavailable' }));
 
                 return (
                   <View key={item.id || idx} className={`rounded-xl p-3 mb-3 border ${isDark ? 'bg-slate-900 border-slate-700' : 'bg-surface border-border'}`}>
@@ -240,7 +250,7 @@ export default function AttendanceTodayScreen() {
                     {idx === todayFootprints.length - 1 && clockOutTime === 'MISSING' && (
                       <View className={`flex-row items-center gap-1.5 pt-1 border-t ${isDark ? 'border-slate-800' : 'border-border'}`}>
                         <Text className="text-rose-500 font-black text-xs">↗</Text>
-                        <Text className="text-xs font-semibold text-rose-500">OUT missing</Text>
+                        <Text className="text-xs font-semibold text-rose-500">{t('attendance:out_missing', { defaultValue: 'OUT missing' })}</Text>
                       </View>
                     )}
                   </View>
@@ -257,7 +267,7 @@ export default function AttendanceTodayScreen() {
           className="w-full bg-primary py-3.5 rounded-xl items-center justify-center active:opacity-90 shadow-sm"
           onPress={() => router.push('/leave-create' as any)}
         >
-          <Text className="text-white font-bold text-base">Raise Request</Text>
+          <Text className="text-white font-bold text-base">{t('attendance:raise_request', { defaultValue: 'Raise Request' })}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -10,9 +10,6 @@
     },
     "preview": {
       "distribution": "internal",
-      "env": {
-        "EXPO_DOCTOR_ENABLE": "0"
-      },
       "android": {
         "buildType": "apk",
         "image": "latest"
@@ -23,9 +20,6 @@
     },
     "production": {
       "autoIncrement": true,
-      "env": {
-        "EXPO_DOCTOR_ENABLE": "0"
-      },
       "android": {
         "buildType": "apk"
       }
